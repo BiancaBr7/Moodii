@@ -1,0 +1,29 @@
+name: Android CI
+
+on:
+  push:
+    paths:
+      - "frontend/**"
+    branches: [main, dev]
+  pull_request:
+    paths:
+      - "frontend/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+
+      - name: Build Android App
+        run: ./gradlew assembleDebug
