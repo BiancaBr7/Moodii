@@ -1,0 +1,17 @@
+# Maven
+target/
+*.class
+
+# Logs
+*.log
+
+# IDEs
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# Spring Boot specific
+.env
+*.iml
