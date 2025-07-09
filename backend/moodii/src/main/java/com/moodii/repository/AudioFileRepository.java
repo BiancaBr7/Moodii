@@ -1,7 +1,7 @@
 package com.moodii.repository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
 import com.moodii.model.Audio;
-import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface AudioFileRepository extends JpaRepository<Audio, Integer> {
+public interface AudioFileRepository extends MongoRepository<Audio, Integer> {
 }
