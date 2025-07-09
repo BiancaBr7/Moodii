@@ -9,7 +9,7 @@
  */
 
 package com.moodii.model;
-
+// import jdk.nashorn.internal.objects.annotations.Getter;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,6 +23,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
  * This class is used to store user credentials and roles in the MongoDB database.
  * It includes fields for the user's ID, username, password, and role (Admin, User).
  */
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

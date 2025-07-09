@@ -16,3 +16,4 @@ public class TestController {
         return ResponseEntity.ok(Map.of("user", auth.getPrincipal()));
     }
 }
+
