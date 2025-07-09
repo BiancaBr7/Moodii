@@ -5,10 +5,19 @@ services:
       dockerfile: ../../docker/backend/Dockerfile
     ports:
       - "8080:8080"
-    # Removed volume mount as discussed earlier
 
-  ml:
-    build: ./docker/ml
+  ml-service:
+    build: ./ml
     ports:
       - "8000:8000"
-    command: python -m http.server 8000
+    environment:
+      - PYTHONUNBUFFERED=1
+      
+  mongodb:
+      image: mongo:latest
+      ports:
+        - "27017:27017"
+      volumes:
+        - ./src/main/resources/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      environment:
+        MONGO_INITDB_DATABASE: moodii
