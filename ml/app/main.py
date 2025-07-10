@@ -1,37 +1,17 @@
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI
 from pydantic import BaseModel
-import numpy as np
-import librosa  # For audio analysis
-import pickle   # For loading models
+from predict import MoodPredictor
 
 app = FastAPI()
+predictor = MoodPredictor()
 
-# Load pre-trained models
-text_model = pickle.load(open("models/text_mood.pkl", "rb"))
-audio_model = pickle.load(open("models/audio_mood.pkl", "rb"))
+class TextRequest(BaseModel):
+    text: str
 
-class Prediction(BaseModel):
-    mood_id: int
-    transcription: str
-    confidence: float
+@app.post("/predict")
+def predict_mood(request: TextRequest):
+    return predictor.predict(request.text)
 
-@app.post("/predict", response_model=Prediction)
-async def predict(audio: UploadFile = File(...)):
-    # 1. Process audio
-    audio_data, _ = librosa.load(audio.file, sr=22050)
-    mfcc = librosa.feature.mfcc(y=audio_data, sr=22050)
-    
-    # 2. Get audio mood prediction
-    audio_pred = audio_model.predict(mfcc.mean(axis=1).reshape(1, -1))
-    
-    # 3. Get transcription (Mock - replace with Whisper API)
-    transcription = "Sample transcription"
-    
-    # 4. Get text mood prediction
-    text_pred = text_model.predict([transcription])
-    
-    return {
-        "mood_id": int(text_pred[0]),
-        "transcription": transcription,
-        "confidence": float(np.max(audio_pred))
-    }
+@app.get("/")
+def read_root():
+    return {"message": "Mood Prediction API - Send POST request to /predict with text"}
