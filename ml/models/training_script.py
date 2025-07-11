@@ -1,4 +1,6 @@
 """
+THIS FILE SHOULD NOT BE RAN IN CASUAL CIRCUMSTANCES
+
 The purpose of this file is to teach a model to predict emotions from text
 Note: Run this file within the terminal to train a new model (This will take an absurd about of time). 
 
