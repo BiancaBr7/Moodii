@@ -30,7 +30,6 @@ RUN python -m pip install --upgrade pip && \
 
 COPY . .
 
-# Ensure this includes:
 COPY ./docker/ml/models /app/models
 RUN mkdir -p /app/models
 

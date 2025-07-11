@@ -15,3 +15,6 @@ target/
 # Spring Boot specific
 .env
 *.iml
+
+# ML
+ml/results/

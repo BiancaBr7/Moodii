@@ -1,17 +1,21 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from predict import MoodPredictor
+import uvicorn
 
 app = FastAPI()
-predictor = MoodPredictor()
+predictor = MoodPredictor("../models/mood_model")  # Path to trained model
 
 class TextRequest(BaseModel):
     text: str
 
 @app.post("/predict")
-def predict_mood(request: TextRequest):
+async def predict_mood(request: TextRequest):
     return predictor.predict(request.text)
 
 @app.get("/")
-def read_root():
-    return {"message": "Mood Prediction API - Send POST request to /predict with text"}
+async def health_check():
+    return {"status": "ready"}
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
