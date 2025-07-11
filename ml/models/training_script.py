@@ -29,6 +29,13 @@ from pathlib import Path
 
 
 # Constants
+
+"""
+training_script never uses the values for this dict only the keys and 
+the length of the dict. 
+(if changes are ONLY made to the values of the dict, there is no need to 
+retrain the model)
+"""
 MOOD_EMOJI_MAP = {
     'happiness': '😊',
     'sadness': '😢',
@@ -44,6 +51,7 @@ MOOD_EMOJI_MAP = {
     'enthusiasm': '🤩',
     'empty': '◻️'
 }
+
 MODEL_NAME = "google/mobilebert-uncased"  # Faster alternative
 MODEL_SAVE_PATH = "mood_model"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
