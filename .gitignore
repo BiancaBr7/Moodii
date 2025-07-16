@@ -17,4 +17,5 @@ target/
 *.iml
 
 # ML
-ml/results/
+ml-text-to-emotion
+
