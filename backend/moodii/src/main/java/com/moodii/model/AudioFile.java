@@ -19,10 +19,10 @@ import org.springframework.data.mongodb.core.mapping.Document;
  * - binary audioBlob
  * - string format
  */
-public class Audio {
+public class AudioFile {
     @Id
     private String id;
-
+    private Integer fileId;
     private Integer logId;
     private byte[] audioBlob;
     private String format;

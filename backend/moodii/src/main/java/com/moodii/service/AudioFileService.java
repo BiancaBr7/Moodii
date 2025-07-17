@@ -1,31 +1,28 @@
 package com.moodii.service;
 
-import com.moodii.model.Audio;
+import com.moodii.model.AudioFile;
 import com.moodii.repository.AudioFileRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 @Service
 public class AudioFileService {
+    private final AudioFileRepository audioFileRepository;
 
-    @Autowired
-    private AudioFileRepository audioFileRepository;
+    public AudioFileService(AudioFileRepository audioFileRepository) {
+        this.audioFileRepository = audioFileRepository;
+    }
 
-    public Audio uploadAudio(Integer logId, MultipartFile file) throws IOException {
-        Audio audioFile = new Audio();
+    public AudioFile saveAudioFile(Integer logId, MultipartFile file) throws IOException {
+        AudioFile audioFile = new AudioFile();
         audioFile.setLogId(logId);
         audioFile.setAudioBlob(file.getBytes());
         audioFile.setFormat(file.getContentType());
         return audioFileRepository.save(audioFile);
     }
 
-    public Audio getAudio(Integer id) {
-        return audioFileRepository.findById(id).orElse(null);
-    }
-
-    public void deleteAudio(Integer id) {
-        audioFileRepository.deleteById(id);
+    public AudioFile getAudioFileByLogId(Integer logId) {
+        return audioFileRepository.findByLogId(logId);
     }
 }
