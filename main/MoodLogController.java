@@ -30,6 +30,24 @@ public class MoodLogController {
         return ResponseEntity.ok(moodLogRepository.findByDate(date));
     }
 
+    @PatchMapping("/{id}/mood")
+    public ResponseEntity<MoodLog> updateMood(
+        @PathVariable Long id,
+        @RequestParam("mood") String mood) {
+
+    Optional<MoodLog> optionalLog = moodLogRepository.findById(id);
+    if (optionalLog.isEmpty()) {
+        return ResponseEntity.notFound().build();
+    }
+
+    MoodLog log = optionalLog.get();
+    log.setMood(mood);
+    moodLogRepository.save(log);
+
+    return ResponseEntity.ok(log);
+}
+
+    
     @GetMapping("/calendar")
     public ResponseEntity<List<MoodLog>> getMoodLogsByMonth(@RequestParam("month")
                 @DateTimeFormat(pattern = "yyyy-MM") YearMonth month) {
