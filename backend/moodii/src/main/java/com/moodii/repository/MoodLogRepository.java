@@ -1,10 +1,14 @@
-package com.moodii.repository;
+package com.example.moodtracker.repository;
 
-import com.moodii.model.MoodLog;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import com.example.moodtracker.model.MoodLog;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDate;
 import java.util.List;
 
-public interface MoodLogRepository extends MongoRepository<MoodLog, String> {
-    List<MoodLog> findByUserId(Integer userId);
-    MoodLog findByLogId(Integer logId);
+@Repository
+public interface MoodLogRepository extends JpaRepository<MoodLog, Long> {
+    List<MoodLog> findByDate(LocalDate date);
+    List<MoodLog> findByDateBetween(LocalDate start, LocalDate end);
 }
