@@ -1,4 +1,4 @@
-package com.example.pixelatedapp.components
+package com.example.moodii.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -245,8 +245,8 @@ private fun ControlButton(
 }
 
 // Extension function for `sp` to `em` like behavior
-@Composable // Mark as Composable because it uses LocalDensity.current
-fun Float.em() = (this * LocalDensity.current.fontScale).sp
+//@Composable // Mark as Composable because it uses LocalDensity.current
+//fun Float.em() = (this * LocalDensity.current.fontScale).sp
 
 // Helper function to convert pixels to Dp
 // This function needs to be marked @Composable or take Density as a parameter

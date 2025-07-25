@@ -24,7 +24,7 @@ import com.example.moodii.ui.theme.PixelatedWhite
 import com.example.moodii.ui.theme.PressStart2P
 import androidx.compose.ui.platform.LocalDensity // For .em() extension
 import androidx.compose.ui.unit.TextUnit // For .em() extension
-import com.example.pixelatedapp.components.AudioPlayer
+import com.example.moodii.ui.components.AudioPlayer
 
 // Define the .em() extension function here or in a common utility file
 @Composable

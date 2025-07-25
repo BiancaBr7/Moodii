@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.rememberNavController
-import com.example.moodii.ui.navigation.NavGraph
+import com.example.moodii.ui.navigation.MoodiiNavGraph
 import com.example.moodii.ui.theme.PixelatedAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -14,7 +14,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             PixelatedAppTheme {
                 val navController = rememberNavController()
-                NavGraph(navController = navController)
+                MoodiiNavGraph(navController = navController)
             }
         }
     }

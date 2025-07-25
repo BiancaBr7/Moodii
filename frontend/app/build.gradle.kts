@@ -45,6 +45,10 @@
         // Core KTX extensions
         implementation(libs.androidx.core.ktx)
 
+        //Retrofit + gson dependencies
+        implementation ("com.squareup.retrofit2:retrofit:2.9.0")
+        implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
+
         // Jetpack Compose dependencies
         implementation(libs.androidx.activity.compose)
         implementation(libs.androidx.ui) // Base UI components for Compose

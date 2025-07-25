@@ -16,25 +16,48 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 // import androidx.compose.material3.TextFieldDefaults // Remove this import if it exists
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.example.moodii.ui.auth.register.RegisterViewModel
+import com.example.moodii.ui.auth.register.RegisterState
 import com.example.moodii.ui.theme.PixelatedAppTheme // Ensure your custom theme is imported
 
 @Composable
-fun SignUpScreen(navController: NavHostController) {
+fun SignUpScreen(navController: NavHostController, viewModel: RegisterViewModel = viewModel()) {
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    var message by remember { mutableStateOf<String?>(null) }
+    
+    // Observe the register state from ViewModel
+    val registerState by viewModel.registerState.collectAsState()
+    
+    // Local state for validation messages
+    var validationMessage by remember { mutableStateOf<String?>(null) }
+    
+    // Handle navigation and messages based on register state
+    LaunchedEffect(registerState) {
+        when (registerState) {
+            is RegisterState.Success -> {
+                navController.navigate("loginScreen") {
+                    // Clear the back stack so user can't navigate back to signup after successful registration
+                    popUpTo("signupScreen") { inclusive = true }
+                }
+            }
+            else -> { /* Handle other states in the UI */ }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -59,9 +82,10 @@ fun SignUpScreen(navController: NavHostController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "SIGN UP",
+                text = "REGISTER",
                 fontSize = 18.sp,
                 fontFamily = MaterialTheme.typography.titleLarge.fontFamily, // Apply your pixelated font
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface, // Uses onSurface color (e.g., Indigo) from your theme
                 modifier = Modifier.padding(bottom = 24.dp)
             )
@@ -259,22 +283,25 @@ fun SignUpScreen(navController: NavHostController) {
 
             Button(
                 onClick = {
-                    message = when {
+                    validationMessage = when {
                         username.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank() ->
                             "Please fill in all fields."
                         password != confirmPassword ->
                             "Passwords do not match."
+                        email.contains("@").not() || email.contains(".").not() ->
+                            "Please enter a valid email address."
+                        password.length < 6 ->
+                            "Password must be at least 6 characters long."
                         else -> {
-                            // In a real app, you'd perform actual sign-up here
-                            // For now, just navigate to login and show success message
-                            navController.navigate("loginScreen")
-                            "Sign up successful! Welcome, $username!"
+                            viewModel.register(username, email, password)
+                            null // Clear validation message when submitting
                         }
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp),
+                enabled = registerState !is RegisterState.Loading, // Disable button while loading
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFDA70D6), // Orchid (kept hardcoded as it's a specific button color)
                     contentColor = Color.White
@@ -283,9 +310,10 @@ fun SignUpScreen(navController: NavHostController) {
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
             ) {
                 Text(
-                    "SIGN UP",
+                    text = if (registerState is RegisterState.Loading) "REGISTERING..." else "REGISTER",
                     fontSize = 14.sp,
-                    fontFamily = MaterialTheme.typography.labelLarge.fontFamily
+                    fontFamily = MaterialTheme.typography.labelLarge.fontFamily,
+                    fontWeight = FontWeight.Bold
                 )
             }
 
@@ -301,11 +329,30 @@ fun SignUpScreen(navController: NavHostController) {
                     }
             )
 
-            if (message != null) {
+            // Message Box - Show validation errors, registration errors, or success messages
+            val errorMessage = when {
+                validationMessage != null -> validationMessage
+                registerState is RegisterState.Error -> (registerState as RegisterState.Error).message
+                else -> null
+            }
+            
+            val successMessage = when {
+                registerState is RegisterState.Success -> (registerState as RegisterState.Success).message
+                else -> null
+            }
+            
+            // Show error dialog
+            if (errorMessage != null) {
                 AlertDialog(
-                    onDismissRequest = { message = null },
+                    onDismissRequest = { 
+                        validationMessage = null
+                        viewModel.clearError()
+                    },
                     confirmButton = {
-                        TextButton(onClick = { message = null }) {
+                        TextButton(onClick = { 
+                            validationMessage = null
+                            viewModel.clearError()
+                        }) {
                             Text(
                                 "OK",
                                 color = MaterialTheme.colorScheme.onPrimary,
@@ -313,9 +360,52 @@ fun SignUpScreen(navController: NavHostController) {
                             )
                         }
                     },
+                    title = {
+                        Text(
+                            if (validationMessage != null) "Validation Error" else "Registration Error",
+                            fontFamily = MaterialTheme.typography.titleMedium.fontFamily,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    },
                     text = {
                         Text(
-                            message!!,
+                            errorMessage,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontFamily = MaterialTheme.typography.bodyMedium.fontFamily
+                        )
+                    },
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(8.dp)
+                )
+            }
+            
+            // Show success dialog
+            if (successMessage != null) {
+                AlertDialog(
+                    onDismissRequest = { /* Auto-navigate handled in LaunchedEffect */ },
+                    confirmButton = {
+                        TextButton(onClick = { 
+                            navController.navigate("loginScreen") {
+                                popUpTo("signupScreen") { inclusive = true }
+                            }
+                        }) {
+                            Text(
+                                "Continue to Login",
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontFamily = MaterialTheme.typography.labelSmall.fontFamily
+                            )
+                        }
+                    },
+                    title = {
+                        Text(
+                            "Registration Successful!",
+                            fontFamily = MaterialTheme.typography.titleMedium.fontFamily,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    text = {
+                        Text(
+                            successMessage,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontFamily = MaterialTheme.typography.bodyMedium.fontFamily
                         )
@@ -330,7 +420,7 @@ fun SignUpScreen(navController: NavHostController) {
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun PixelSignupScreenPreview() {
+fun PixelRegisterScreenPreview() {
     PixelatedAppTheme { // Wrap in your app theme for preview
         SignUpScreen(navController = rememberNavController())
     }

@@ -15,6 +15,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults // Make sure this im
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,15 +25,36 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.example.moodii.ui.auth.login.LoginViewModel
+import com.example.moodii.ui.auth.login.LoginState
 import com.example.moodii.ui.theme.PixelatedAppTheme // Ensure your custom theme is imported
 
 @Composable
-fun LoginScreen(navController: NavHostController) {
+fun LoginScreen(navController: NavHostController, viewModel: LoginViewModel = viewModel()) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var message by remember { mutableStateOf<String?>(null) }
+    
+    // Observe the login state from ViewModel
+    val loginState by viewModel.loginState.collectAsState()
+    
+    // Local state for validation messages
+    var validationMessage by remember { mutableStateOf<String?>(null) }
+    
+    // Handle navigation and messages based on login state
+    LaunchedEffect(loginState) {
+        when (loginState) {
+            is LoginState.Success -> {
+                navController.navigate("homeScreen") {
+                    // Clear the back stack so user can't navigate back to login
+                    popUpTo("loginScreen") { inclusive = true }
+                }
+            }
+            else -> { /* Handle other states in the UI */ }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -180,18 +202,18 @@ fun LoginScreen(navController: NavHostController) {
 
             Button(
                 onClick = {
-                    message = when {
+                    validationMessage = when {
                         username.isBlank() || password.isBlank() -> "Please fill in both fields."
-                        username == "testuser" && password == "password123" -> {
-                            navController.navigate("homeScreen") // Example navigation
-                            "Login successful! Welcome." // Message will display briefly before navigation
+                        else -> {
+                            viewModel.login(username, password)
+                            null // Clear validation message when submitting
                         }
-                        else -> "Invalid username or password. Please try again."
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp),
+                enabled = loginState !is LoginState.Loading, // Disable button while loading
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFDA70D6), // Orchid (kept hardcoded as it's a specific button color)
                     contentColor = Color.White
@@ -200,7 +222,7 @@ fun LoginScreen(navController: NavHostController) {
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
             ) {
                 Text(
-                    "LOGIN",
+                    text = if (loginState is LoginState.Loading) "LOGGING IN..." else "LOGIN",
                     fontSize = 14.sp,
                     fontFamily = MaterialTheme.typography.labelLarge.fontFamily, // Apply your pixelated font
                     fontWeight = FontWeight.Bold
@@ -217,12 +239,24 @@ fun LoginScreen(navController: NavHostController) {
                     .clickable { navController.navigate("signupScreen") } // Navigate to signup screen
             )
 
-            // Message Box
-            if (message != null) {
+            // Message Box - Show validation errors or login errors
+            val errorMessage = when {
+                validationMessage != null -> validationMessage
+                loginState is LoginState.Error -> (loginState as LoginState.Error).message
+                else -> null
+            }
+            
+            if (errorMessage != null) {
                 AlertDialog(
-                    onDismissRequest = { message = null },
+                    onDismissRequest = { 
+                        validationMessage = null
+                        viewModel.clearError()
+                    },
                     confirmButton = {
-                        TextButton(onClick = { message = null }) {
+                        TextButton(onClick = { 
+                            validationMessage = null
+                            viewModel.clearError()
+                        }) {
                             Text(
                                 "OK",
                                 color = MaterialTheme.colorScheme.onPrimary, // White
@@ -231,11 +265,15 @@ fun LoginScreen(navController: NavHostController) {
                         }
                     },
                     title = {
-                        // Optional title: Text("Status", fontFamily = MaterialTheme.typography.titleMedium.fontFamily)
+                        Text(
+                            if (validationMessage != null) "Validation Error" else "Login Error",
+                            fontFamily = MaterialTheme.typography.titleMedium.fontFamily,
+                            color = MaterialTheme.colorScheme.error
+                        )
                     },
                     text = {
                         Text(
-                            message!!,
+                            errorMessage,
                             color = MaterialTheme.colorScheme.onSurface, // Indigo from theme
                             fontFamily = MaterialTheme.typography.bodyMedium.fontFamily
                         )

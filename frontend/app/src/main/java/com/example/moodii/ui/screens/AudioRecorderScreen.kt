@@ -88,12 +88,12 @@ fun AudioRecorderScreen(navController: NavHostController) {
                     shape = RoundedCornerShape(12.dp)
                 )
                 .border(4.dp, AudioRecorderBorderThick, RoundedCornerShape(12.dp)) // Thicker, pixelated border
-                .shadow(
-                    elevation = 6.dp, // Pixelated shadow
-                    shape = RoundedCornerShape(12.dp),
-                    ambientColor = AudioRecorderShadowGeneral,
-                    spotColor = AudioRecorderShadowGeneral
-                )
+//                .shadow(
+//                    elevation = 6.dp, // Pixelated shadow
+//                    shape = RoundedCornerShape(12.dp),
+//                    ambientColor = AudioRecorderShadowGeneral,
+//                    spotColor = AudioRecorderShadowGeneral
+//                )
                 .padding(horizontal = 24.dp, vertical = 24.dp), // Reduced padding for overall container
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp) // Spacing between sections
@@ -184,10 +184,11 @@ fun AudioRecorderScreen(navController: NavHostController) {
                                 showAlert("No recording to pause/play. Start recording first.", "Info")
                             }
                         },
+                        shape = RoundedCornerShape(8.dp),
                         modifier = Modifier
                             .width(100.dp) // Fixed width for consistency
                             .height(48.dp) // Fixed height
-                            .border(2.dp, AudioRecorderShadowGeneral, RoundedCornerShape(8.dp))
+//                            .border(2.dp, AudioRecorderShadowGeneral, RoundedCornerShape(8.dp))
                             .shadow(
                                 elevation = 3.dp,
                                 shape = RoundedCornerShape(8.dp),
@@ -226,10 +227,11 @@ fun AudioRecorderScreen(navController: NavHostController) {
                             predictedMood = null // Clear highlighted mood
                             showAlert("Recording Restarted", "Info")
                         },
+                        shape = RoundedCornerShape(8.dp),
                         modifier = Modifier
                             .width(100.dp) // Fixed width
                             .height(48.dp) // Fixed height
-                            .border(2.dp, AudioRecorderShadowGeneral, RoundedCornerShape(8.dp))
+//                            .border(2.dp, AudioRecorderShadowGeneral, RoundedCornerShape(8.dp))
                             .shadow(
                                 elevation = 3.dp,
                                 shape = RoundedCornerShape(8.dp),
@@ -264,7 +266,7 @@ fun AudioRecorderScreen(navController: NavHostController) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(AudioRecorderMoodSection, RoundedCornerShape(8.dp))
-                    .border(2.dp, AudioRecorderBorderThick, RoundedCornerShape(8.dp))
+//                    .border(2.dp, AudioRecorderBorderThick, RoundedCornerShape(8.dp))
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -320,10 +322,11 @@ fun AudioRecorderScreen(navController: NavHostController) {
                     println("Audio saved!")
                     showAlert("Audio Saved!", "Success")
                 },
+                shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(60.dp) // Taller button
-                    .border(2.dp, AudioRecorderShadowGeneral, RoundedCornerShape(8.dp))
+//                    .border(2.dp, AudioRecorderShadowGeneral, RoundedCornerShape(8.dp))
                     .shadow(
                         elevation = 3.dp,
                         shape = RoundedCornerShape(8.dp),
