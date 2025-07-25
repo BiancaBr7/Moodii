@@ -1,7 +1,4 @@
-package com.moodii.model;
-
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+package com.moodii.dto;
 
 import lombok.Data;
 import lombok.Getter;
@@ -12,11 +9,8 @@ import java.time.LocalDateTime;
 @Data
 @Getter
 @Setter
-@Document(collection = "mood_logs")
-public class MoodLog {
-    @Id
+public class MoodLogResponse {
     private String id;
-    // private Integer logId;
     private String title;
     private String transcription;
     private Integer moodType;
