@@ -5,6 +5,7 @@ import com.moodii.repository.AudioFileRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
+import java.util.Optional;
 
 @Service
 public class AudioFileService {
@@ -14,7 +15,7 @@ public class AudioFileService {
         this.audioFileRepository = audioFileRepository;
     }
 
-    public AudioFile saveAudioFile(Integer logId, MultipartFile file) throws IOException {
+    public AudioFile saveAudioFile(String logId, MultipartFile file) throws IOException {
         AudioFile audioFile = new AudioFile();
         audioFile.setLogId(logId);
         audioFile.setAudioBlob(file.getBytes());
@@ -22,7 +23,7 @@ public class AudioFileService {
         return audioFileRepository.save(audioFile);
     }
 
-    public AudioFile getAudioFileByLogId(Integer logId) {
+    public Optional<AudioFile> getAudioFileByLogId(String logId) {
         return audioFileRepository.findByLogId(logId);
     }
 }

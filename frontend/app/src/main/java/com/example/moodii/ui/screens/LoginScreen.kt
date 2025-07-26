@@ -30,6 +30,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.moodii.ui.auth.login.LoginViewModel
 import com.example.moodii.ui.auth.login.LoginState
+import com.example.moodii.ui.navigation.AppDestinations
 import com.example.moodii.ui.theme.PixelatedAppTheme // Ensure your custom theme is imported
 
 @Composable
@@ -47,9 +48,9 @@ fun LoginScreen(navController: NavHostController, viewModel: LoginViewModel = vi
     LaunchedEffect(loginState) {
         when (loginState) {
             is LoginState.Success -> {
-                navController.navigate("homeScreen") {
+                navController.navigate(AppDestinations.DASHBOARD_ROUTE) {
                     // Clear the back stack so user can't navigate back to login
-                    popUpTo("loginScreen") { inclusive = true }
+                    popUpTo(AppDestinations.LOGIN_ROUTE) { inclusive = true }
                 }
             }
             else -> { /* Handle other states in the UI */ }
@@ -236,7 +237,7 @@ fun LoginScreen(navController: NavHostController, viewModel: LoginViewModel = vi
                 fontFamily = MaterialTheme.typography.bodySmall.fontFamily, // Apply your pixelated font
                 modifier = Modifier
                     .padding(top = 16.dp)
-                    .clickable { navController.navigate("signupScreen") } // Navigate to signup screen
+                    .clickable { navController.navigate(AppDestinations.SIGNUP_ROUTE) } // Navigate to signup screen
             )
 
             // Message Box - Show validation errors or login errors

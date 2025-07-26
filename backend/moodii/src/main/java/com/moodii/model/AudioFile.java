@@ -14,8 +14,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 /*
  * Represents an audio in the Moodii application
  * Audio:
- * - integer id
- * - integer logId
+ * - string id (MongoDB ObjectId)
+ * - integer fileId
+ * - string logId (References MoodLog.id)
  * - binary audioBlob
  * - string format
  */
@@ -23,7 +24,7 @@ public class AudioFile {
     @Id
     private String id;
     private Integer fileId;
-    private Integer logId;
+    private String logId; // Changed to String to match MoodLog.id
     private byte[] audioBlob;
     private String format;
 }

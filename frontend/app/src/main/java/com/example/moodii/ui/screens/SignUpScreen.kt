@@ -31,6 +31,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.moodii.ui.auth.register.RegisterViewModel
 import com.example.moodii.ui.auth.register.RegisterState
+import com.example.moodii.ui.navigation.AppDestinations
 import com.example.moodii.ui.theme.PixelatedAppTheme // Ensure your custom theme is imported
 
 @Composable
@@ -50,9 +51,9 @@ fun SignUpScreen(navController: NavHostController, viewModel: RegisterViewModel 
     LaunchedEffect(registerState) {
         when (registerState) {
             is RegisterState.Success -> {
-                navController.navigate("loginScreen") {
+                navController.navigate(AppDestinations.LOGIN_ROUTE) {
                     // Clear the back stack so user can't navigate back to signup after successful registration
-                    popUpTo("signupScreen") { inclusive = true }
+                    popUpTo(AppDestinations.SIGNUP_ROUTE) { inclusive = true }
                 }
             }
             else -> { /* Handle other states in the UI */ }
@@ -325,7 +326,7 @@ fun SignUpScreen(navController: NavHostController, viewModel: RegisterViewModel 
                 modifier = Modifier
                     .padding(top = 16.dp)
                     .clickable {
-                        navController.navigate("loginScreen") // Navigate to login screen
+                        navController.navigate(AppDestinations.LOGIN_ROUTE) // Navigate to login screen
                     }
             )
 
@@ -385,8 +386,8 @@ fun SignUpScreen(navController: NavHostController, viewModel: RegisterViewModel 
                     onDismissRequest = { /* Auto-navigate handled in LaunchedEffect */ },
                     confirmButton = {
                         TextButton(onClick = { 
-                            navController.navigate("loginScreen") {
-                                popUpTo("signupScreen") { inclusive = true }
+                            navController.navigate(AppDestinations.LOGIN_ROUTE) {
+                                popUpTo(AppDestinations.SIGNUP_ROUTE) { inclusive = true }
                             }
                         }) {
                             Text(

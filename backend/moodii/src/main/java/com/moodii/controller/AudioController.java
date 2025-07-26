@@ -5,8 +5,10 @@ import com.moodii.service.AudioFileService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
+import java.util.Optional;
 
 @RestController
+@CrossOrigin(origins = "*")
 @RequestMapping("/api/audio")
 public class AudioController {
     private final AudioFileService audioFileService;
@@ -17,13 +19,20 @@ public class AudioController {
 
     @PostMapping("/{logId}")
     public AudioFile uploadAudio(
-            @PathVariable Integer logId,
+            @PathVariable String logId,
             @RequestParam("file") MultipartFile file) throws IOException {
         return audioFileService.saveAudioFile(logId, file);
     }
 
+    @PostMapping("/upload")
+    public AudioFile uploadAudioWithParam(
+            @RequestParam("logId") String logId,
+            @RequestParam("audio") MultipartFile file) throws IOException {
+        return audioFileService.saveAudioFile(logId, file);
+    }
+
     @GetMapping("/{logId}")
-    public AudioFile getAudioFile(@PathVariable Integer logId) {
+    public Optional<AudioFile> getAudioFile(@PathVariable String logId) {
         return audioFileService.getAudioFileByLogId(logId);
     }
 }

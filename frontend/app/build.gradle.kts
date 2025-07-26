@@ -70,8 +70,9 @@
 
         // Debugging tools for Compose
         debugImplementation(libs.androidx.ui.tooling)
-        debugImplementation(libs.androidx.ui.test.manifest)
 
+        implementation("com.squareup.okhttp3:okhttp:4.12.0") // Or the latest version
+        implementation("com.squareup.okhttp3:logging-interceptor:4.12.0") // Optional, for logging
         // Testing dependencies
         testImplementation(libs.junit)
         androidTestImplementation(libs.androidx.junit)

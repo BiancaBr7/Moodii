@@ -29,8 +29,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.example.moodii.ui.audio.AudioRecorderViewModel
 import com.example.moodii.ui.theme.* // Import all custom colors and theme components
 
 // Extension function for pixelated font sizing (from previous discussions)
@@ -41,35 +43,28 @@ fun Float.em(): androidx.compose.ui.unit.TextUnit {
 }
 
 @Composable
-fun AudioRecorderScreen(navController: NavHostController) {
-    var isRecording by remember { mutableStateOf(false) }
-    var isPaused by remember { mutableStateOf(false) }
-    var predictedMood by remember { mutableStateOf<String?>(null) }
-    var alertMessageState by remember { mutableStateOf<Pair<String, Color>?>(null) } // Pair of message and background color
+fun AudioRecorderScreen(
+    navController: NavHostController,
+    viewModel: AudioRecorderViewModel = viewModel()
+) {
+    val state by viewModel.state.collectAsState()
 
-    // This effect handles the auto-dismissal of the alert message
-    LaunchedEffect(alertMessageState) {
-        if (alertMessageState != null) {
+    // Handle alert messages
+    LaunchedEffect(state.alertMessage) {
+        state.alertMessage?.let {
             kotlinx.coroutines.delay(3000) // 3 seconds
-            alertMessageState = null
+            viewModel.clearAlert()
         }
     }
 
     // --- Helper Functions ---
-    val highlightRandomMood = {
-        val moods = listOf("happy", "sad", "mad", "surprised", "neutral")
-        val randomIndex = (moods.indices).random()
-        predictedMood = moods[randomIndex]
-        println("Predicted Mood: ${predictedMood}") // For console logging
-    }
-
     val showAlert = { message: String, type: String ->
         val bgColor = when (type) {
-            "Success" -> AudioRecorderAlertSuccess // Corrected name
-            "Error" -> AudioRecorderAlertError   // Corrected name
-            else -> AudioRecorderAlertInfo       // Corrected name
+            "Success" -> AudioRecorderAlertSuccess
+            "Error" -> AudioRecorderAlertError
+            else -> AudioRecorderAlertInfo
         }
-        alertMessageState = Pair(message, bgColor)
+        // Note: Alert is now handled by ViewModel
     }
 
     Box(
@@ -119,21 +114,17 @@ fun AudioRecorderScreen(navController: NavHostController) {
 
                 Button(
                     onClick = {
-                        isRecording = !isRecording
-                        if (isRecording) {
-                            println("Recording started...")
-                            isPaused = false
-                            highlightRandomMood()
+                        if (state.isRecording) {
+                            viewModel.stopRecording()
                         } else {
-                            println("Recording stopped.")
-                            // Reset to play icon if recording stopped (handled by state below)
+                            viewModel.startRecording()
                         }
                     },
                     modifier = Modifier
                         .size(70.dp) // Adjusted size for better visual
                         .clip(CircleShape)
                         .background(
-                            if (isRecording) AudioRecorderRed else AudioRecorderRecordButton, // Corrected background for non-recording state
+                            if (state.isRecording) AudioRecorderRed else AudioRecorderRecordButton, // Corrected background for non-recording state
                             CircleShape
                         )
                         .border(2.dp, AudioRecorderShadowGeneral, CircleShape)
@@ -176,12 +167,15 @@ fun AudioRecorderScreen(navController: NavHostController) {
                     val isPausePlayButtonPressed by pausePlayInteractionSource.collectIsPressedAsState()
                     Button(
                         onClick = {
-                            if (isRecording) {
-                                isPaused = !isPaused
-                                println(if (isPaused) "Audio paused." else "Audio resumed.")
+                            if (state.isRecording) {
+                                if (state.isPaused) {
+                                    viewModel.resumeRecording()
+                                } else {
+                                    viewModel.pauseRecording()
+                                }
                             } else {
+                                // Show alert if no recording to pause/play
                                 println("No recording to pause/play. Start recording first.")
-                                showAlert("No recording to pause/play. Start recording first.", "Info")
                             }
                         },
                         shape = RoundedCornerShape(8.dp),
@@ -209,7 +203,7 @@ fun AudioRecorderScreen(navController: NavHostController) {
                         interactionSource = pausePlayInteractionSource
                     ) {
                         Text(
-                            text = if (isPaused || !isRecording) "\u25B6" else "\u23F8", // Play (&#9654;) or Pause (&#10074;&#10074;)
+                            text = if (state.isPaused || !state.isRecording) "\u25B6" else "\u23F8", // Play (&#9654;) or Pause (&#10074;&#10074;)
                             fontSize = 18.sp,
                             fontFamily = PressStart2P,
                             fontWeight = FontWeight.Bold // Added bold for better look
@@ -221,11 +215,7 @@ fun AudioRecorderScreen(navController: NavHostController) {
                     val isRestartButtonPressed by restartInteractionSource.collectIsPressedAsState()
                     Button(
                         onClick = {
-                            println("Recording restarted.")
-                            isRecording = false
-                            isPaused = false
-                            predictedMood = null // Clear highlighted mood
-                            showAlert("Recording Restarted", "Info")
+                            viewModel.restartRecording()
                         },
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier
@@ -296,17 +286,17 @@ fun AudioRecorderScreen(navController: NavHostController) {
                             text = emojiChar,
                             fontSize = 28.sp, // Larger emoji size
                             // Simulate filter effects by changing color and scale
-                            color = if (predictedMood == moodName) AudioRecorderTextPrimary else AudioRecorderTextPrimary.copy(alpha = 0.4f), // Desaturate/dim if not highlighted
+                            color = if (state.predictedMood == moodName) AudioRecorderTextPrimary else AudioRecorderTextPrimary.copy(alpha = 0.4f), // Desaturate/dim if not highlighted
                             modifier = Modifier
                                 .padding(horizontal = 4.dp)
                                 .graphicsLayer {
-                                    val scale = if (predictedMood == moodName) 1.1f else 0.9f
+                                    val scale = if (state.predictedMood == moodName) 1.1f else 0.9f
                                     scaleX = scale
                                     scaleY = scale
                                 }
                                 .clickable {
-                                    // Optionally allow user to pick mood manually
-                                    predictedMood = moodName
+                                    // Allow user to pick mood manually
+                                    viewModel.selectMood(moodName)
                                     println("Manually selected mood: $moodName")
                                 }
                         )
@@ -319,9 +309,9 @@ fun AudioRecorderScreen(navController: NavHostController) {
             val isSaveButtonPressed by saveInteractionSource.collectIsPressedAsState()
             Button(
                 onClick = {
-                    println("Audio saved!")
-                    showAlert("Audio Saved!", "Success")
+                    viewModel.saveMoodLog()
                 },
+                enabled = !state.isSaving,
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -347,7 +337,7 @@ fun AudioRecorderScreen(navController: NavHostController) {
                 interactionSource = saveInteractionSource
             ) {
                 Text(
-                    text = "SAVE",
+                    text = if (state.isSaving) "SAVING..." else "SAVE",
                     fontSize = 18.sp,
                     fontFamily = PressStart2P,
                     fontWeight = FontWeight.Bold
@@ -357,7 +347,7 @@ fun AudioRecorderScreen(navController: NavHostController) {
 
         // Custom Alert Message (fixed at bottom)
         AnimatedVisibility(
-            visible = alertMessageState != null,
+            visible = state.alertMessage != null,
             enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }), // Slide up from half height
             exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }), // Slide down to half height
             modifier = Modifier
@@ -365,7 +355,13 @@ fun AudioRecorderScreen(navController: NavHostController) {
                 .padding(bottom = 20.dp)
                 .widthIn(max = 280.dp) // Constrain max width for alert
         ) {
-            alertMessageState?.let { (message, bgColor) ->
+            state.alertMessage?.let { (message, type) ->
+                val bgColor = when (type) {
+                    "Success" -> AudioRecorderAlertSuccess
+                    "Error" -> AudioRecorderAlertError
+                    else -> AudioRecorderAlertInfo
+                }
+                
                 Box(
                     modifier = Modifier
                         .background(bgColor, RoundedCornerShape(8.dp))

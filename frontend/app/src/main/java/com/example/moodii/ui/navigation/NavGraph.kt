@@ -1,4 +1,4 @@
-package com.example.moodii.ui.navigation // Or your preferred package
+package com.example.moodii.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -9,12 +9,16 @@ import com.example.moodii.ui.screens.AudioRecorderScreen
 import com.example.moodii.ui.screens.LoginScreen
 import com.example.moodii.ui.screens.SignUpScreen
 import com.example.moodii.ui.screens.LogListScreen
+import com.example.moodii.ui.dashboard.DashboardScreen
+import com.example.moodii.ui.day.DayViewScreen
 
 object AppDestinations {
     const val LOGIN_ROUTE = "login"
     const val SIGNUP_ROUTE = "signup"
+    const val DASHBOARD_ROUTE = "dashboard"
     const val AUDIO_ROUTE = "record"
     const val LOG_ENTRIES_ROUTE = "log_entries"
+    const val DAY_VIEW_ROUTE = "day_view"
 }
 
 @Composable
@@ -30,54 +34,47 @@ fun MoodiiNavGraph(
     ) {
         composable(AppDestinations.LOGIN_ROUTE) {
             LoginScreen(
-                navController = navController,
-//                onLoginSuccess = {
-//                    navController.navigate(AppDestinations.HOME_ROUTE) {
-//                        // Pop up to login screen to remove it from back stack
-//                        popUpTo(AppDestinations.LOGIN_ROUTE) {
-//                            inclusive = true
-//                        }
-//                        // Avoid multiple copies of the home screen
-//                        launchSingleTop = true
-//                    }
-//                },
-//                onNavigateToSignup = {
-//                    navController.navigate(AppDestinations.SIGNUP_ROUTE)
-//                }
+                navController = navController
+                // Navigation is handled inside LoginViewModel/LoginScreen
+                // On successful login, navigate to dashboard:
+                // navController.navigate(AppDestinations.DASHBOARD_ROUTE) {
+                //     popUpTo(AppDestinations.LOGIN_ROUTE) { inclusive = true }
+                //     launchSingleTop = true
+                // }
             )
         }
 
         composable(AppDestinations.SIGNUP_ROUTE) {
             SignUpScreen(
-                navController = navController,
-//                onSignupSuccess = {
-//                    navController.navigate(AppDestinations.HOME_ROUTE) {
-//                        popUpTo(AppDestinations.SIGNUP_ROUTE) { // Or popUpTo(LOGIN_ROUTE) if signup is on top of login
-//                            inclusive = true
-//                        }
-//                        launchSingleTop = true
-//                    }
-//                },
-//                onNavigateBackToLogin = {
-//                    navController.popBackStack()
-//                }
-            )
-        }
-
-        composable(AppDestinations.AUDIO_ROUTE) {
-            LogListScreen(
-                navController = navController,
-//                onNavigateToLogEntries = {
-//                    navController.navigate(AppDestinations.LOG_ENTRIES_ROUTE)
-//                }
-//                // Add other navigation actions from home screen
-            )
-        }
-
-        composable(AppDestinations.LOG_ENTRIES_ROUTE) {
-            AudioRecorderScreen(
                 navController = navController
-                // You'll likely pass a ViewModel or data source here
+                // Navigation is handled inside RegisterViewModel/SignUpScreen
+                // On successful signup, navigate to dashboard or back to login
+            )
+        }
+
+        // Main dashboard with calendar
+        composable(AppDestinations.DASHBOARD_ROUTE) {
+            DashboardScreen(navController = navController)
+        }
+
+        // Day view for specific date
+        composable("${AppDestinations.DAY_VIEW_ROUTE}/{selectedDate}") { backStackEntry ->
+            val selectedDate = backStackEntry.arguments?.getString("selectedDate") ?: ""
+            DayViewScreen(
+                navController = navController,
+                selectedDate = selectedDate
+            )
+        }
+
+        // Audio recorder (now integrated into dashboard as dialog)
+        composable(AppDestinations.AUDIO_ROUTE) {
+            AudioRecorderScreen(navController = navController)
+        }
+
+        // Log entries list (can be replaced by day view)
+        composable(AppDestinations.LOG_ENTRIES_ROUTE) {
+            LogListScreen(
+                navController = navController
             )
         }
 
