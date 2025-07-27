@@ -10,15 +10,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.*
 
 data class DashboardState(
     val isLoading: Boolean = false,
-    val currentMonth: LocalDate = LocalDate.now(),
+    val currentMonth: String = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(Date()),
     val moodLogsForMonth: List<MoodLog> = emptyList(),
     val error: String? = null,
-    val selectedDate: LocalDate? = null
+    val selectedDate: String? = null
 )
 
 class DashboardViewModel(application: Application) : AndroidViewModel(application) {
@@ -37,25 +37,24 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         loadMoodLogsForMonth(currentMonth)
     }
 
-    fun navigateToMonth(month: LocalDate) {
+    fun navigateToMonth(month: String) {
         _state.value = _state.value.copy(currentMonth = month)
         loadMoodLogsForMonth(month)
     }
 
-    fun selectDate(date: LocalDate) {
+    fun selectDate(date: String) {
         _state.value = _state.value.copy(selectedDate = date)
     }
 
-    private fun loadMoodLogsForMonth(month: LocalDate) {
+    private fun loadMoodLogsForMonth(month: String) {
         viewModelScope.launch {
             try {
                 _state.value = _state.value.copy(isLoading = true, error = null)
                 
-                // Get userId from shared preferences or auth state
-                val userId = getUserId() // You'll need to implement this
-                val monthString = month.format(DateTimeFormatter.ofPattern("yyyy-MM"))
+                // Get userId as Int from auth manager
+                val userId = getUserId()
                 
-                val response = moodLogService.getMoodLogsByMonth(userId, monthString)
+                val response = moodLogService.getMoodLogsByMonth(userId, month)
                 
                 if (response.isSuccessful) {
                     _state.value = _state.value.copy(
@@ -78,17 +77,39 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun navigateToPreviousMonth() {
-        val previousMonth = _state.value.currentMonth.minusMonths(1)
-        navigateToMonth(previousMonth)
+        try {
+            val currentMonth = _state.value.currentMonth
+            val dateFormat = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+            val calendar = Calendar.getInstance()
+            calendar.time = dateFormat.parse(currentMonth) ?: Date()
+            calendar.add(Calendar.MONTH, -1)
+            val previousMonth = dateFormat.format(calendar.time)
+            navigateToMonth(previousMonth)
+        } catch (e: Exception) {
+            // If parsing fails, just stay on current month
+        }
     }
 
     fun navigateToNextMonth() {
-        val nextMonth = _state.value.currentMonth.plusMonths(1)
-        navigateToMonth(nextMonth)
+        try {
+            val currentMonth = _state.value.currentMonth
+            val dateFormat = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+            val calendar = Calendar.getInstance()
+            calendar.time = dateFormat.parse(currentMonth) ?: Date()
+            calendar.add(Calendar.MONTH, 1)
+            val nextMonth = dateFormat.format(calendar.time)
+            navigateToMonth(nextMonth)
+        } catch (e: Exception) {
+            // If parsing fails, just stay on current month
+        }
     }
 
     // Get userId from AuthManager
-    private fun getUserId(): String {
-        return authManager.getUserId() ?: "unknown_user"
+    private fun getUserId(): Int {
+        return authManager.getUserIdAsInt()
+    }
+    
+    fun logout() {
+        authManager.logout()
     }
 }

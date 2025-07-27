@@ -36,7 +36,7 @@ data class MoodLogRequest(
     val moodType: Int,
     
     @SerializedName("userId")
-    val userId: String
+    val userId: Int
 )
 
 data class UpdateMoodRequest(

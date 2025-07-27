@@ -13,19 +13,19 @@ interface MoodLogService {
     @POST("moodlogs")
     suspend fun createMoodLog(@Body request: MoodLogRequest): Response<MoodLog>
     
-    @GET("moodlogs/user/{userId}")
-    suspend fun getMoodLogsByUser(@Path("userId") userId: String): Response<List<MoodLog>>
+    @GET("users/{userId}/moodlogs")
+    suspend fun getMoodLogsByUser(@Path("userId") userId: Int): Response<List<MoodLog>>
     
-    @GET("moodlogs/user/{userId}/date/{date}")
+    @GET("moodlogs")
     suspend fun getMoodLogsByDate(
-        @Path("userId") userId: String,
-        @Path("date") date: String // Format: yyyy-MM-dd
+        @Query("userId") userId: Int,
+        @Query("date") date: String // Format: yyyy-MM-dd
     ): Response<List<MoodLog>>
     
-    @GET("moodlogs/user/{userId}/month/{month}")
+    @GET("moodlogs/calendar")
     suspend fun getMoodLogsByMonth(
-        @Path("userId") userId: String,
-        @Path("month") month: String // Format: yyyy-MM
+        @Query("userId") userId: Int,
+        @Query("month") month: String // Format: yyyy-MM
     ): Response<List<MoodLog>>
     
     @PUT("moodlogs/{id}/mood")
@@ -35,7 +35,10 @@ interface MoodLogService {
     ): Response<MoodLog>
     
     @DELETE("moodlogs/{id}")
-    suspend fun deleteMoodLog(@Path("id") id: String): Response<ResponseBody>
+    suspend fun deleteMoodLog(
+        @Path("id") id: String,
+        @Query("userId") userId: Int
+    ): Response<ResponseBody>
     
     @Multipart
     @POST("audio/upload")

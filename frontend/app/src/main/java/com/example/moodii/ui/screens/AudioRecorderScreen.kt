@@ -1,5 +1,8 @@
 package com.example.moodii.ui.screens
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -11,8 +14,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,6 +54,25 @@ fun AudioRecorderScreen(
     viewModel: AudioRecorderViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
+
+    // Permission launcher
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        viewModel.onPermissionResult(isGranted)
+    }
+
+    // Check permissions on first launch
+    LaunchedEffect(Unit) {
+        viewModel.checkPermissions()
+    }
+
+    // Handle permission request
+    LaunchedEffect(state.needsPermission) {
+        if (state.needsPermission) {
+            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
 
     // Handle alert messages
     LaunchedEffect(state.alertMessage) {
@@ -304,6 +329,79 @@ fun AudioRecorderScreen(
                 }
             }
 
+            // Transcription Section
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AudioRecorderMoodSection, RoundedCornerShape(8.dp))
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Transcription:",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AudioRecorderTextPrimary,
+                        fontFamily = PressStart2P
+                    )
+                    
+                    if (state.isTranscribing) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "🎤",
+                            fontSize = 16.sp,
+                            modifier = Modifier
+                                .graphicsLayer {
+                                    // Simple pulsing animation for recording indicator
+                                    val scale = 1f + 0.1f * kotlin.math.sin(System.currentTimeMillis() * 0.01f)
+                                    scaleX = scale
+                                    scaleY = scale
+                                }
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(80.dp)
+                        .background(AudioRecorderBackgroundPage, RoundedCornerShape(4.dp))
+                        .border(1.dp, AudioRecorderTextPrimary.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
+                        .padding(8.dp),
+                    contentAlignment = if (state.transcription.isBlank()) Alignment.Center else Alignment.TopStart
+                ) {
+                    if (state.transcription.isBlank()) {
+                        Text(
+                            text = if (state.isTranscribing) "Listening..." 
+                                  else if (state.transcriptionError != null) "Transcription error: ${state.transcriptionError}"
+                                  else "Start recording to see live transcription",
+                            fontSize = 10.sp,
+                            color = AudioRecorderTextPrimary.copy(alpha = 0.6f),
+                            fontFamily = PressStart2P,
+                            textAlign = TextAlign.Center
+                        )
+                    } else {
+                        val scrollState = rememberScrollState()
+                        Text(
+                            text = state.transcription,
+                            fontSize = 10.sp,
+                            color = AudioRecorderTextPrimary,
+                            fontFamily = PressStart2P,
+                            lineHeight = 14.sp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .verticalScroll(scrollState)
+                        )
+                    }
+                }
+            }
+
             // Save Button
             val saveInteractionSource = remember { MutableInteractionSource() }
             val isSaveButtonPressed by saveInteractionSource.collectIsPressedAsState()
@@ -339,6 +437,30 @@ fun AudioRecorderScreen(
                 Text(
                     text = if (state.isSaving) "SAVING..." else "SAVE",
                     fontSize = 18.sp,
+                    fontFamily = PressStart2P,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            
+            // Test Save Button (for development)
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = {
+                    viewModel.testSaveMoodLog()
+                },
+                enabled = !state.isSaving,
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF32CD32), // LimeGreen for test button
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "TEST SAVE (No Recording)",
+                    fontSize = 14.sp,
                     fontFamily = PressStart2P,
                     fontWeight = FontWeight.Bold
                 )

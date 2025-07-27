@@ -11,12 +11,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.*
 
 data class DayViewState(
     val isLoading: Boolean = false,
-    val selectedDate: LocalDate = LocalDate.now(),
+    val selectedDate: String = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()),
     val moodLogsForDay: List<MoodLog> = emptyList(),
     val error: String? = null,
     val isDeleting: Boolean = false,
@@ -30,16 +30,15 @@ class DayViewViewModel(application: Application) : AndroidViewModel(application)
     private val moodLogService = MoodLogClient.moodLogService
     private val authManager = AuthManager(application)
 
-    fun loadMoodLogsForDate(date: LocalDate) {
+    fun loadMoodLogsForDate(date: String) {
         _state.value = _state.value.copy(selectedDate = date)
         viewModelScope.launch {
             try {
                 _state.value = _state.value.copy(isLoading = true, error = null)
                 
                 val userId = getUserId()
-                val dateString = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
                 
-                val response = moodLogService.getMoodLogsByDate(userId, dateString)
+                val response = moodLogService.getMoodLogsByDate(userId, date)
                 
                 if (response.isSuccessful) {
                     val sortedMoodLogs = response.body()?.sortedBy { it.createdAt } ?: emptyList()
@@ -98,11 +97,14 @@ class DayViewViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun deleteMoodLog(moodLogId: String) {
+        println("DayViewViewModel: deleteMoodLog called with ID: $moodLogId")
         viewModelScope.launch {
             try {
                 _state.value = _state.value.copy(isDeleting = true, error = null)
                 
-                val response = moodLogService.deleteMoodLog(moodLogId)
+                val userId = getUserId()
+                val response = moodLogService.deleteMoodLog(moodLogId, userId)
+                println("DayViewViewModel: Delete response - Success: ${response.isSuccessful}, Code: ${response.code()}")
                 
                 if (response.isSuccessful) {
                     // Remove the deleted mood log from the local list
@@ -111,23 +113,26 @@ class DayViewViewModel(application: Application) : AndroidViewModel(application)
                         moodLogsForDay = updatedList,
                         isDeleting = false
                     )
+                    println("DayViewViewModel: Mood log deleted successfully. Updated list size: ${updatedList.size}")
                 } else {
                     _state.value = _state.value.copy(
                         error = "Failed to delete mood log: ${response.code()}",
                         isDeleting = false
                     )
+                    println("DayViewViewModel: Failed to delete mood log: ${response.code()}")
                 }
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     error = "Network error: ${e.message}",
                     isDeleting = false
                 )
+                println("DayViewViewModel: Exception during delete: ${e.message}")
             }
         }
     }
 
     // Get userId from AuthManager
-    private fun getUserId(): String {
-        return authManager.getUserId() ?: "unknown_user"
+    private fun getUserId(): Int {
+        return authManager.getUserIdAsInt()
     }
 }

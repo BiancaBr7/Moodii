@@ -1,27 +1,29 @@
 package com.example.moodii.ui.auth.login
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.moodii.repository.auth.AuthRepository
+import com.example.moodii.utils.AuthManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class LoginViewModel(private val repository: AuthRepository = AuthRepository()) : ViewModel() {
+class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _loginState = MutableStateFlow<LoginState>(LoginState.Idle)
     val loginState: StateFlow<LoginState> = _loginState
+    
+    private val authManager = AuthManager(application)
 
     fun login(email: String, password: String) {
         viewModelScope.launch {
             _loginState.value = LoginState.Loading
             try {
-                val response = repository.login(email, password)
-                if (response.isSuccessful && response.body() != null) {
-                    val authResponse = response.body()!!
-                    _loginState.value = LoginState.Success(authResponse.token)
+                val result = authManager.login(email, password)
+                if (result.isSuccess) {
+                    _loginState.value = LoginState.Success(result.getOrThrow().token)
                 } else {
-                    _loginState.value = LoginState.Error("Login failed: ${response.message()}")
+                    _loginState.value = LoginState.Error(result.exceptionOrNull()?.message ?: "Login failed")
                 }
             } catch (e: Exception) {
                 _loginState.value = LoginState.Error(e.message ?: "Unknown error")

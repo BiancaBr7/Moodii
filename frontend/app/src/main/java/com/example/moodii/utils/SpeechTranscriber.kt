@@ -1,0 +1,158 @@
+package com.example.moodii.utils
+
+import android.content.Context
+import android.content.Intent
+import android.media.MediaMetadataRetriever
+import android.net.Uri
+import android.os.Bundle
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import android.util.Log
+import kotlinx.coroutines.suspendCancellableCoroutine
+import java.io.File
+import kotlin.coroutines.resume
+
+class SpeechTranscriber(private val context: Context) {
+    
+    private var speechRecognizer: SpeechRecognizer? = null
+    
+    /**
+     * Real-time speech recognition during recording
+     */
+    fun startLiveTranscription(
+        onResult: (String) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        if (!SpeechRecognizer.isRecognitionAvailable(context)) {
+            onError("Speech recognition not available on this device")
+            return
+        }
+        
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
+        
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US")
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+        }
+        
+        speechRecognizer?.setRecognitionListener(object : RecognitionListener {
+            override fun onReadyForSpeech(params: Bundle?) {
+                Log.d("SpeechTranscriber", "Ready for speech")
+            }
+            
+            override fun onBeginningOfSpeech() {
+                Log.d("SpeechTranscriber", "Speech started")
+            }
+            
+            override fun onRmsChanged(rmsdB: Float) {
+                // Audio level changed
+            }
+            
+            override fun onBufferReceived(buffer: ByteArray?) {
+                // Audio buffer received
+            }
+            
+            override fun onEndOfSpeech() {
+                Log.d("SpeechTranscriber", "Speech ended")
+            }
+            
+            override fun onError(error: Int) {
+                val errorMessage = when (error) {
+                    SpeechRecognizer.ERROR_AUDIO -> "Audio recording error"
+                    SpeechRecognizer.ERROR_CLIENT -> "Client side error"
+                    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Insufficient permissions"
+                    SpeechRecognizer.ERROR_NETWORK -> "Network error"
+                    SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network timeout"
+                    SpeechRecognizer.ERROR_NO_MATCH -> "No match found"
+                    SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Recognition service busy"
+                    SpeechRecognizer.ERROR_SERVER -> "Error from server"
+                    SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "No speech input"
+                    else -> "Unknown error: $error"
+                }
+                Log.e("SpeechTranscriber", "Recognition error: $errorMessage")
+                onError(errorMessage)
+            }
+            
+            override fun onResults(results: Bundle?) {
+                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                val transcription = matches?.firstOrNull() ?: ""
+                Log.d("SpeechTranscriber", "Final result: $transcription")
+                onResult(transcription)
+            }
+            
+            override fun onPartialResults(partialResults: Bundle?) {
+                val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                val transcription = matches?.firstOrNull() ?: ""
+                Log.d("SpeechTranscriber", "Partial result: $transcription")
+                onResult(transcription)
+            }
+            
+            override fun onEvent(eventType: Int, params: Bundle?) {
+                // Speech recognition event
+            }
+        })
+        
+        speechRecognizer?.startListening(intent)
+    }
+    
+    /**
+     * Stop live transcription
+     */
+    fun stopLiveTranscription() {
+        speechRecognizer?.stopListening()
+        speechRecognizer?.destroy()
+        speechRecognizer = null
+    }
+    
+    /**
+     * Transcribe audio file using Android's speech recognition
+     * Note: This is limited as Android's SpeechRecognizer primarily works with live audio
+     */
+    suspend fun transcribeAudioFile(audioFile: File): String {
+        return suspendCancellableCoroutine { continuation ->
+            try {
+                // For audio file transcription, we'd need to play the audio and capture it
+                // This is a simplified approach - in practice, you might want to use
+                // cloud services like Google Cloud Speech-to-Text for file transcription
+                
+                val duration = getAudioDuration(audioFile)
+                if (duration > 0) {
+                    // For now, return a placeholder
+                    // In a real implementation, you'd integrate with cloud services
+                    continuation.resume("Audio transcription from file (duration: ${duration}ms)")
+                } else {
+                    continuation.resume("Unable to transcribe audio file")
+                }
+            } catch (e: Exception) {
+                Log.e("SpeechTranscriber", "Error transcribing audio file", e)
+                continuation.resume("Error transcribing audio: ${e.message}")
+            }
+        }
+    }
+    
+    /**
+     * Get audio file duration
+     */
+    private fun getAudioDuration(audioFile: File): Long {
+        return try {
+            val retriever = MediaMetadataRetriever()
+            retriever.setDataSource(audioFile.absolutePath)
+            val duration = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
+            retriever.release()
+            duration
+        } catch (e: Exception) {
+            Log.e("SpeechTranscriber", "Error getting audio duration", e)
+            0L
+        }
+    }
+    
+    /**
+     * Check if speech recognition is available
+     */
+    fun isAvailable(): Boolean {
+        return SpeechRecognizer.isRecognitionAvailable(context)
+    }
+}

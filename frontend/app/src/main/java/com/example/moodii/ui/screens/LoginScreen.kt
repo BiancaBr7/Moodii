@@ -239,6 +239,28 @@ fun LoginScreen(navController: NavHostController, viewModel: LoginViewModel = vi
                     .padding(top = 16.dp)
                     .clickable { navController.navigate(AppDestinations.SIGNUP_ROUTE) } // Navigate to signup screen
             )
+//
+//            // Test Login Button (for development)
+//            Button(
+//                onClick = {
+//                    viewModel.login("testuser", "password123")
+//                },
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .padding(top = 8.dp),
+//                colors = ButtonDefaults.buttonColors(
+//                    containerColor = Color(0xFF32CD32), // LimeGreen for test button
+//                    contentColor = Color.White
+//                ),
+//                shape = RoundedCornerShape(10.dp)
+//            ) {
+//                Text(
+//                    text = "TEST LOGIN",
+//                    fontSize = 12.sp,
+//                    fontFamily = MaterialTheme.typography.labelLarge.fontFamily,
+//                    fontWeight = FontWeight.Bold
+//                )
+//            }
 
             // Message Box - Show validation errors or login errors
             val errorMessage = when {

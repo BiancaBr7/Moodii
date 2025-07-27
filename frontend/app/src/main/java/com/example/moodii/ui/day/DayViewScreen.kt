@@ -29,8 +29,8 @@ import androidx.navigation.compose.rememberNavController
 import com.example.moodii.data.moodlog.MoodLog
 import com.example.moodii.ui.components.LogEntry
 import com.example.moodii.ui.theme.*
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.*
 
 @Composable
 fun DayViewScreen(
@@ -39,10 +39,9 @@ fun DayViewScreen(
     viewModel: DayViewViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
-    val date = LocalDate.parse(selectedDate)
 
-    LaunchedEffect(date) {
-        viewModel.loadMoodLogsForDate(date)
+    LaunchedEffect(selectedDate) {
+        viewModel.loadMoodLogsForDate(selectedDate)
     }
 
     Column(
@@ -65,7 +64,7 @@ fun DayViewScreen(
             }
             
             Text(
-                text = date.format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy")),
+                text = formatDateDisplay(selectedDate),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = AudioRecorderTextPrimary,
@@ -135,18 +134,18 @@ fun DayViewScreen(
             ) {
                 items(state.moodLogsForDay) { moodLog ->
                     LogEntry(
-                        logContent = buildLogContent(moodLog),
+                        moodLog = moodLog,
                         onEditClick = {
                             // TODO: Implement edit functionality
                             println("Edit mood log: ${moodLog.id}")
                         },
                         onDeleteClick = {
+                            println("DayViewScreen: Delete clicked for mood log: ${moodLog.id}")
                             moodLog.id?.let { id ->
+                                println("DayViewScreen: Calling viewModel.deleteMoodLog with ID: $id")
                                 viewModel.deleteMoodLog(id)
-                            }
-                        },
-                        initialAudioProgress = 0f, // TODO: Get actual audio progress
-                        totalAudioDurationSeconds = 180 // TODO: Get actual duration
+                            } ?: println("DayViewScreen: Mood log ID is null!")
+                        }
                     )
                 }
             }
@@ -226,5 +225,17 @@ fun DayViewScreenPreview() {
             navController = rememberNavController(),
             selectedDate = "2025-01-26"
         )
+    }
+}
+
+// Helper function to format date string for display
+private fun formatDateDisplay(dateString: String): String {
+    return try {
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val outputFormat = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault())
+        val date = inputFormat.parse(dateString)
+        date?.let { outputFormat.format(it) } ?: dateString
+    } catch (e: Exception) {
+        dateString // Fallback to original string if parsing fails
     }
 }

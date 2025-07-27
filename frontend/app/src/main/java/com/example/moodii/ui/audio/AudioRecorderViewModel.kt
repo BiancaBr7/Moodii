@@ -1,12 +1,15 @@
 package com.example.moodii.ui.audio
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.moodii.api.moodlog.MoodLogClient
 import com.example.moodii.data.moodlog.MoodLog
 import com.example.moodii.data.moodlog.MoodLogRequest
 import com.example.moodii.utils.AuthManager
+import com.example.moodii.utils.AudioRecorder
+import com.example.moodii.utils.SpeechTranscriber
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,6 +18,8 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 
 data class AudioRecorderState(
     val isRecording: Boolean = false,
@@ -24,7 +29,10 @@ data class AudioRecorderState(
     val isSaving: Boolean = false,
     val savedMoodLog: MoodLog? = null,
     val error: String? = null,
-    val alertMessage: Pair<String, String>? = null // message, type
+    val alertMessage: Pair<String, String>? = null, // message, type
+    val needsPermission: Boolean = false,
+    val isTranscribing: Boolean = false,
+    val transcriptionError: String? = null
 )
 
 class AudioRecorderViewModel(application: Application) : AndroidViewModel(application) {
@@ -33,38 +41,108 @@ class AudioRecorderViewModel(application: Application) : AndroidViewModel(applic
 
     private val moodLogService = MoodLogClient.moodLogService
     private val authManager = AuthManager(application)
+    private val audioRecorder = AudioRecorder(application)
+    private val speechTranscriber = SpeechTranscriber(application)
     private var audioFile: File? = null
 
+    fun checkPermissions() {
+        if (!audioRecorder.hasRecordPermission()) {
+            _state.value = _state.value.copy(needsPermission = true)
+        }
+    }
+
+    fun onPermissionResult(granted: Boolean) {
+        _state.value = _state.value.copy(needsPermission = false)
+        if (!granted) {
+            showAlert("Microphone permission is required for recording", "Error")
+        }
+    }
+
     fun startRecording() {
-        _state.value = _state.value.copy(
-            isRecording = true,
-            isPaused = false,
-            error = null
-        )
-        // TODO: Implement actual audio recording logic
-        simulateMoodPrediction()
+        if (!audioRecorder.hasRecordPermission()) {
+            _state.value = _state.value.copy(needsPermission = true)
+            return
+        }
+
+        try {
+            // Create output file
+            val fileName = "recording_${System.currentTimeMillis()}.m4a"
+            audioFile = File(getApplication<Application>().filesDir, fileName)
+            
+            val success = audioRecorder.startRecording(audioFile!!)
+            if (success) {
+                _state.value = _state.value.copy(
+                    isRecording = true,
+                    isPaused = false,
+                    error = null,
+                    transcription = "",
+                    isTranscribing = true
+                )
+                Log.d("AudioRecorderViewModel", "Recording started successfully")
+                
+                // Start real-time transcription
+                startTranscription()
+                
+                // Simulate mood prediction for now - replace with actual ML integration
+                simulateMoodPrediction()
+            } else {
+                showAlert("Failed to start recording", "Error")
+            }
+        } catch (e: Exception) {
+            Log.e("AudioRecorderViewModel", "Error starting recording", e)
+            showAlert("Error starting recording: ${e.message}", "Error")
+        }
     }
 
     fun stopRecording() {
-        _state.value = _state.value.copy(
-            isRecording = false,
-            isPaused = false
-        )
-        // TODO: Stop actual audio recording and save file
-        simulateTranscription()
+        try {
+            // Stop transcription first
+            stopTranscription()
+            
+            val recordedFile = audioRecorder.stopRecording()
+            _state.value = _state.value.copy(
+                isRecording = false,
+                isPaused = false,
+                isTranscribing = false
+            )
+            
+            if (recordedFile != null && recordedFile.exists()) {
+                audioFile = recordedFile
+                Log.d("AudioRecorderViewModel", "Recording stopped, file saved: ${recordedFile.absolutePath}")
+                
+                // If real-time transcription didn't capture much, try file transcription
+                if (_state.value.transcription.isBlank()) {
+                    transcribeAudioFile(recordedFile)
+                }
+            } else {
+                showAlert("Recording failed to save", "Error")
+            }
+        } catch (e: Exception) {
+            Log.e("AudioRecorderViewModel", "Error stopping recording", e)
+            showAlert("Error stopping recording: ${e.message}", "Error")
+        }
     }
 
     fun pauseRecording() {
-        _state.value = _state.value.copy(isPaused = true)
-        // TODO: Implement pause logic
+        if (audioRecorder.isCurrentlyRecording()) {
+            audioRecorder.pauseRecording()
+            _state.value = _state.value.copy(isPaused = true)
+        }
     }
 
     fun resumeRecording() {
-        _state.value = _state.value.copy(isPaused = false)
-        // TODO: Implement resume logic
+        if (audioRecorder.isCurrentlyRecording()) {
+            audioRecorder.resumeRecording()
+            _state.value = _state.value.copy(isPaused = false)
+        }
     }
 
     fun restartRecording() {
+        // Stop current recording if active
+        if (audioRecorder.isCurrentlyRecording()) {
+            audioRecorder.stopRecording()
+        }
+        
         _state.value = _state.value.copy(
             isRecording = false,
             isPaused = false,
@@ -91,42 +169,56 @@ class AudioRecorderViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch {
             try {
                 _state.value = _state.value.copy(isSaving = true, error = null)
+                
+                Log.d("AudioRecorder", "Starting mood log save process...")
 
                 // Create mood log request
                 val moodTypeInt = getMoodTypeInt(currentState.predictedMood!!)
+                val userId = getUserId()
+                
+                Log.d("AudioRecorder", "Creating mood log with: userId=$userId, moodType=$moodTypeInt")
+                
                 val request = MoodLogRequest(
-                    title = "Audio Recording", // You can make this customizable
+                    title = "Audio Recording - ${SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())}",
                     transcription = currentState.transcription,
                     moodType = moodTypeInt,
-                    userId = getUserId()
+                    userId = userId
                 )
 
                 // Create mood log
+                Log.d("AudioRecorder", "Sending request to backend...")
                 val response = moodLogService.createMoodLog(request)
 
                 if (response.isSuccessful) {
                     val moodLog = response.body()
+                    Log.d("AudioRecorder", "Mood log created successfully: ${moodLog?.id}")
                     if (moodLog != null) {
                         _state.value = _state.value.copy(savedMoodLog = moodLog)
                         
                         // Upload audio if available
                         audioFile?.let { file ->
+                            Log.d("AudioRecorder", "Uploading audio file...")
                             uploadAudio(moodLog.id!!, file)
                         } ?: run {
                             _state.value = _state.value.copy(isSaving = false)
                             showAlert("Mood log saved successfully!", "Success")
+                            Log.d("AudioRecorder", "Mood log saved without audio")
                         }
                     }
                 } else {
+                    val errorMsg = "Failed to save mood log: ${response.code()} - ${response.message()}"
+                    Log.e("AudioRecorder", errorMsg)
                     _state.value = _state.value.copy(
-                        error = "Failed to save mood log: ${response.code()}",
+                        error = errorMsg,
                         isSaving = false
                     )
                     showAlert("Failed to save mood log", "Error")
                 }
             } catch (e: Exception) {
+                val errorMsg = "Network error: ${e.message}"
+                Log.e("AudioRecorder", errorMsg, e)
                 _state.value = _state.value.copy(
-                    error = "Network error: ${e.message}",
+                    error = errorMsg,
                     isSaving = false
                 )
                 showAlert("Network error occurred", "Error")
@@ -136,24 +228,47 @@ class AudioRecorderViewModel(application: Application) : AndroidViewModel(applic
 
     private suspend fun uploadAudio(moodLogId: String, audioFile: File) {
         try {
-            val requestFile = audioFile.asRequestBody("audio/webm".toMediaTypeOrNull())
+            Log.d("AudioRecorder", "Preparing to upload audio file: ${audioFile.name}")
+            Log.d("AudioRecorder", "File exists: ${audioFile.exists()}")
+            Log.d("AudioRecorder", "File size: ${audioFile.length()} bytes")
+            Log.d("AudioRecorder", "File path: ${audioFile.absolutePath}")
+            
+            val requestFile = audioFile.asRequestBody("audio/mp4".toMediaTypeOrNull())
             val audioPart = MultipartBody.Part.createFormData("audio", audioFile.name, requestFile)
             
+            Log.d("AudioRecorder", "Uploading audio for mood log: $moodLogId")
             val response = moodLogService.uploadAudio(moodLogId, audioPart)
             
+            Log.d("AudioRecorder", "Upload response code: ${response.code()}")
+            Log.d("AudioRecorder", "Upload response message: ${response.message()}")
+            
             if (response.isSuccessful) {
+                val responseBody = response.body()
+                Log.d("AudioRecorder", "Upload response body: $responseBody")
                 _state.value = _state.value.copy(isSaving = false)
                 showAlert("Audio saved successfully!", "Success")
+                Log.d("AudioRecorder", "Audio uploaded successfully")
             } else {
+                val errorMsg = "Failed to upload audio: ${response.code()} - ${response.message()}"
+                Log.e("AudioRecorder", errorMsg)
+                // Try to read error body
+                try {
+                    val errorBody = response.errorBody()?.string()
+                    Log.e("AudioRecorder", "Upload error body: $errorBody")
+                } catch (e: Exception) {
+                    Log.e("AudioRecorder", "Could not read upload error body", e)
+                }
                 _state.value = _state.value.copy(
-                    error = "Failed to upload audio: ${response.code()}",
+                    error = errorMsg,
                     isSaving = false
                 )
                 showAlert("Failed to upload audio", "Error")
             }
         } catch (e: Exception) {
+            val errorMsg = "Audio upload error: ${e.message}"
+            Log.e("AudioRecorder", errorMsg, e)
             _state.value = _state.value.copy(
-                error = "Audio upload error: ${e.message}",
+                error = errorMsg,
                 isSaving = false
             )
             showAlert("Audio upload failed", "Error")
@@ -189,12 +304,76 @@ class AudioRecorderViewModel(application: Application) : AndroidViewModel(applic
         _state.value = _state.value.copy(alertMessage = Pair(message, type))
     }
 
+    fun testSaveMoodLog() {
+        // Test function to save a mood log without recording
+        _state.value = _state.value.copy(
+            predictedMood = "happy",
+            transcription = "This is a test mood log entry created without audio recording.",
+            isRecording = false
+        )
+        Log.d("AudioRecorder", "Test mood log created, calling saveMoodLog()")
+        saveMoodLog()
+    }
+
     fun clearAlert() {
         _state.value = _state.value.copy(alertMessage = null)
     }
 
+    // Transcription methods
+    private fun startTranscription() {
+        if (!speechTranscriber.isAvailable()) {
+            _state.value = _state.value.copy(
+                transcriptionError = "Speech recognition not available",
+                isTranscribing = false
+            )
+            return
+        }
+
+        speechTranscriber.startLiveTranscription(
+            onResult = { transcription ->
+                _state.value = _state.value.copy(
+                    transcription = transcription,
+                    transcriptionError = null
+                )
+                Log.d("AudioRecorderViewModel", "Transcription update: $transcription")
+            },
+            onError = { error ->
+                _state.value = _state.value.copy(
+                    transcriptionError = error,
+                    isTranscribing = false
+                )
+                Log.e("AudioRecorderViewModel", "Transcription error: $error")
+            }
+        )
+    }
+
+    private fun stopTranscription() {
+        speechTranscriber.stopLiveTranscription()
+    }
+
+    private fun transcribeAudioFile(audioFile: File) {
+        viewModelScope.launch {
+            try {
+                _state.value = _state.value.copy(isTranscribing = true)
+                val transcription = speechTranscriber.transcribeAudioFile(audioFile)
+                _state.value = _state.value.copy(
+                    transcription = transcription,
+                    isTranscribing = false,
+                    transcriptionError = null
+                )
+                Log.d("AudioRecorderViewModel", "File transcription: $transcription")
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    transcriptionError = "Failed to transcribe audio: ${e.message}",
+                    isTranscribing = false
+                )
+                Log.e("AudioRecorderViewModel", "File transcription error", e)
+            }
+        }
+    }
+
     // Get userId from AuthManager
-    private fun getUserId(): String {
-        return authManager.getUserId() ?: "unknown_user"
+    private fun getUserId(): Int {
+        return authManager.getUserIdAsInt()
     }
 }

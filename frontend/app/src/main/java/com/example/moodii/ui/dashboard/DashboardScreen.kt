@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.*
@@ -34,9 +35,8 @@ import com.example.moodii.data.moodlog.MoodLog
 import com.example.moodii.ui.screens.AudioRecorderScreen
 import com.example.moodii.ui.navigation.AppDestinations
 import com.example.moodii.ui.theme.*
-import java.time.LocalDate
-import java.time.YearMonth
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.*
 
 @Composable
 fun DashboardScreen(
@@ -56,18 +56,39 @@ fun DashboardScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            // Header
-            Text(
-                text = "MOOD TRACKER",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = AudioRecorderTextPrimary,
-                fontFamily = PressStart2P,
+            // Header with logout button
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 16.dp),
-                textAlign = TextAlign.Center
-            )
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "MOOD TRACKER",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = AudioRecorderTextPrimary,
+                    fontFamily = PressStart2P,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center
+                )
+                
+                IconButton(
+                    onClick = {
+                        viewModel.logout()
+                        navController.navigate(AppDestinations.LOGIN_ROUTE) {
+                            popUpTo(AppDestinations.DASHBOARD_ROUTE) { inclusive = true }
+                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ExitToApp,
+                        contentDescription = "Logout",
+                        tint = AudioRecorderTextPrimary
+                    )
+                }
+            }
 
             // Calendar
             TrackerCalendar(
@@ -175,21 +196,33 @@ fun DashboardScreen(
 
 @Composable
 fun TrackerCalendar(
-    currentMonth: LocalDate,
+    currentMonth: String,
     moodLogs: List<MoodLog>,
-    onDateClick: (LocalDate) -> Unit,
+    onDateClick: (String) -> Unit,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
     isLoading: Boolean
 ) {
-    val yearMonth = YearMonth.from(currentMonth)
-    val firstDayOfMonth = yearMonth.atDay(1)
-    val lastDayOfMonth = yearMonth.atEndOfMonth()
-    val firstDayOfWeek = firstDayOfMonth.dayOfWeek.value % 7 // Sunday = 0
+    // Parse current month string to get calendar info
+    val calendar = Calendar.getInstance()
+    val monthFormat = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+    try {
+        calendar.time = monthFormat.parse(currentMonth) ?: Date()
+    } catch (e: Exception) {
+        calendar.time = Date() // Fallback to current date
+    }
+    
+    val year = calendar.get(Calendar.YEAR)
+    val month = calendar.get(Calendar.MONTH)
+    
+    // Get first day of month and calculate starting position
+    calendar.set(year, month, 1)
+    val firstDayOfWeek = calendar.get(Calendar.DAY_OF_WEEK) - 1 // Sunday = 0
+    val daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
     
     // Create mood log map for quick lookup
     val moodLogsByDate = moodLogs.groupBy { 
-        LocalDate.parse(it.createdAt?.take(10) ?: "1970-01-01")
+        it.createdAt?.take(10) ?: "1970-01-01"
     }
 
     Card(
@@ -215,7 +248,7 @@ fun TrackerCalendar(
                 }
                 
                 Text(
-                    text = currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
+                    text = SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(calendar.time),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = AudioRecorderTextPrimary,
@@ -263,10 +296,10 @@ fun TrackerCalendar(
                 }
 
                 // Days of the month
-                val daysInMonth = lastDayOfMonth.dayOfMonth
                 items(daysInMonth) { day ->
-                    val date = yearMonth.atDay(day + 1)
-                    val moodLogsForDay = moodLogsByDate[date] ?: emptyList()
+                    val dayNumber = day + 1
+                    val dateString = String.format("%04d-%02d-%02d", year, month + 1, dayNumber)
+                    val moodLogsForDay = moodLogsByDate[dateString] ?: emptyList()
                     val hasMoodLogs = moodLogsForDay.isNotEmpty()
                     val dominantMood = if (hasMoodLogs) {
                         // Get the most recent mood for the day
@@ -274,10 +307,10 @@ fun TrackerCalendar(
                     } else null
 
                     CalendarDay(
-                        day = day + 1,
+                        day = dayNumber,
                         hasMoodLogs = hasMoodLogs,
                         moodType = dominantMood,
-                        onClick = { onDateClick(date) }
+                        onClick = { onDateClick(dateString) }
                     )
                 }
             }

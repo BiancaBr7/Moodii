@@ -44,7 +44,12 @@ fun TrashCan(
                 spotColor = PixelatedPurpleDarker
             )
             .background(PixelatedPurpleMedium, RectangleShape)
-            .clickable(onClick = onClick) // Inner padding to show border
+            .border(2.dp, PixelatedPurpleDarker, RectangleShape) // Add border for better visibility
+            .clickable { 
+                println("TrashCan: onClick triggered!")
+                onClick() 
+            }
+            .padding(4.dp) // Inner padding to show border
     ) {
         // Here you would typically use an Image composable with a VectorDrawable
         // representing your pixelated trash can SVG.
@@ -68,7 +73,8 @@ fun TrashCan(
         Image(
             painter = painterResource(id = R.drawable.ic_trash_can), // Replace with your actual drawable
             contentDescription = "Delete",
-            modifier = Modifier.size(40.dp) // Adjust size as needed, this will be scaled
+            modifier = Modifier
+                .size(32.dp) // Adjust size as needed, this will be scaled
                 .background(PixelatedPurpleFill) // Example background if not using a detailed drawable
         )
     }

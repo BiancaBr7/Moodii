@@ -25,6 +25,7 @@ import com.example.moodii.ui.theme.PressStart2P
 import androidx.compose.ui.platform.LocalDensity // For .em() extension
 import androidx.compose.ui.unit.TextUnit // For .em() extension
 import com.example.moodii.ui.components.AudioPlayer
+import com.example.moodii.data.moodlog.MoodLog
 
 // Define the .em() extension function here or in a common utility file
 @Composable
@@ -36,11 +37,9 @@ fun Float.em(): TextUnit {
 @Composable
 fun LogEntry(
     modifier: Modifier = Modifier,
-    logContent: String = "EMPTY BLOG POST\nCLICK TO EDIT",
+    moodLog: MoodLog,
     onEditClick: () -> Unit = {},
-    onDeleteClick: () -> Unit = {},
-    initialAudioProgress: Float = 0f,
-    totalAudioDurationSeconds: Int = (2 * 60) + 36
+    onDeleteClick: () -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -96,7 +95,7 @@ fun LogEntry(
                             color = PixelatedPurpleDarker, // text-[#5a3d7a]
                             fontSize = 12.sp,
                             fontFamily = PressStart2P,
-                            modifier = Modifier.padding(end = 8.dp).clickable(onClick = onDeleteClick)
+                            modifier = Modifier.padding(end = 8.dp)
                         )
                     }
 
@@ -117,7 +116,7 @@ fun LogEntry(
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            text = "July 27, 2025",
+                            text = formatDateFromCreatedAt(moodLog.createdAt),
                             color = PixelatedPurpleDarker,
                             fontSize = 8.sp,
                             fontFamily = PressStart2P,
@@ -131,16 +130,16 @@ fun LogEntry(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(PixelatedPurpleMedium) // Background for content area, or use PixelatedPurpleMedium if that's the goal
-                            .padding(top = 16.dp, bottom = 32.dp, start = 10.dp, end = 10.dp)
+                            .padding(16.dp) // Increased padding for better spacing
                             .clickable(onClick = onEditClick),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.CenterStart // Left-align the content
                     ) {
                         Text(
-                            text = logContent,
+                            text = buildMoodContent(moodLog),
                             color = PixelatedPurpleDarker,
                             fontSize = 12.sp,
                             fontFamily = PressStart2P,
-                            lineHeight = 1.2f.em(), // Adjust line height for pixelated text
+                            lineHeight = 18.sp, // Fixed line height for better spacing
                             softWrap = true,
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -151,27 +150,33 @@ fun LogEntry(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(0.dp), // Padding for this entire row within the main box
+                        .padding(horizontal = 12.dp, vertical = 8.dp), // Increased padding for better spacing
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Start // Distributes content
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Audio Player (takes up available space)
-                    AudioPlayer(
-                        modifier = Modifier.weight(1f), // Make it fill available width
-                        initialProgress = initialAudioProgress,
-                        totalDurationSeconds = totalAudioDurationSeconds
+                    // Audio Player (takes up available space) - only show if audio exists
+                    // For now, we'll always show the audio player since we don't have an audioFilePath property
+                    // In a real implementation, you would check if audio exists for this mood log
+                    MoodLogAudioPlayer(
+                        moodLogId = moodLog.id,
+                        modifier = Modifier.weight(1f)
                     )
 
-                    Spacer(Modifier.width(8.dp)) // Space between player and garbage can
+                    Spacer(modifier = Modifier.width(8.dp)) // Space between player and garbage can
 
-                    // Garbage Can Icon (fixed size, aligned to the right by SpaceBetween)
+                    // Garbage Can Icon (fixed size, aligned to the right)
                     Box(
-                        modifier = Modifier.width(60.dp), // Define the width for this section
-                        contentAlignment = Alignment.Center // Centers content (TrashCan) horizontally AND vertically within this Box
+                        modifier = Modifier
+                            .width(60.dp)
+                            .padding(4.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         TrashCan(
-                            onClick = onDeleteClick,
-                            modifier = Modifier.size(50.dp) // TrashCan itself maintains its size
+                            onClick = {
+                                println("LogEntry: TrashCan clicked for mood log: ${moodLog.id}")
+                                onDeleteClick()
+                            },
+                            modifier = Modifier.size(48.dp) // Slightly smaller for better proportions
                         )
                     }
                 }
@@ -184,6 +189,92 @@ fun LogEntry(
 @Composable
 fun PixelatedLogEntryPreview() {
     PixelatedAppTheme {
-        LogEntry(logContent = "My amazing log entry!")
+        LogEntry(
+            moodLog = com.example.moodii.data.moodlog.MoodLog(
+                id = "1",
+                title = "My first mood log",
+                transcription = "I'm feeling really good today!",
+                moodType = 1, // Happy
+                userId = "1",
+                createdAt = "2025-07-26T14:30:00Z"
+            )
+        )
+    }
+}
+
+// Helper function to format date from createdAt timestamp
+private fun formatDateFromCreatedAt(createdAt: String?): String {
+    return if (createdAt?.isNotBlank() == true) {
+        try {
+            // Extract date part from ISO timestamp (e.g., "2025-01-27T14:30:00Z" -> "Jan 27, 2025")
+            val datePart = createdAt.split("T")[0] // Get "2025-01-27"
+            val parts = datePart.split("-")
+            if (parts.size == 3) {
+                val year = parts[0]
+                val month = when(parts[1]) {
+                    "01" -> "Jan"
+                    "02" -> "Feb" 
+                    "03" -> "Mar"
+                    "04" -> "Apr"
+                    "05" -> "May"
+                    "06" -> "Jun"
+                    "07" -> "Jul"
+                    "08" -> "Aug"
+                    "09" -> "Sep"
+                    "10" -> "Oct"
+                    "11" -> "Nov"
+                    "12" -> "Dec"
+                    else -> parts[1]
+                }
+                val day = parts[2].toIntOrNull()?.toString() ?: parts[2]
+                "$month $day, $year"
+            } else {
+                createdAt
+            }
+        } catch (e: Exception) {
+            createdAt
+        }
+    } else {
+        "Unknown date"
+    }
+}
+
+// Helper function to build mood content display
+private fun buildMoodContent(moodLog: MoodLog): String {
+    val moodName = getMoodName(moodLog.moodType)
+    val moodEmoji = getMoodEmoji(moodLog.moodType)
+    
+    return buildString {
+        if (moodLog.title.isNotBlank()) {
+            append("📝 ${moodLog.title}")
+            append("\n\n")
+        }
+        append("${moodEmoji} Mood: ${moodName}")
+        if (moodLog.transcription.isNotBlank()) {
+            append("\n\n")
+            append("🎤 \"${moodLog.transcription}\"")
+        }
+    }
+}
+
+private fun getMoodEmoji(moodType: Int): String {
+    return when (moodType) {
+        1 -> "😄" // Happy
+        2 -> "😢" // Sad
+        3 -> "😠" // Mad
+        4 -> "😮" // Surprised
+        5 -> "😐" // Neutral
+        else -> "😐"
+    }
+}
+
+private fun getMoodName(moodType: Int): String {
+    return when (moodType) {
+        1 -> "Happy"
+        2 -> "Sad"
+        3 -> "Mad"
+        4 -> "Surprised"
+        5 -> "Neutral"
+        else -> "Unknown"
     }
 }
