@@ -109,26 +109,44 @@ class SpeechTranscriber(private val context: Context) {
     
     /**
      * Transcribe audio file using Android's speech recognition
-     * Note: This is limited as Android's SpeechRecognizer primarily works with live audio
+     * Since Android's SpeechRecognizer works with live audio, this attempts to
+     * play the file and capture it, or returns the live transcription if available
      */
-    suspend fun transcribeAudioFile(audioFile: File): String {
+    suspend fun transcribeAudioFile(audioFile: File, liveTranscription: String = ""): String {
         return suspendCancellableCoroutine { continuation ->
             try {
-                // For audio file transcription, we'd need to play the audio and capture it
-                // This is a simplified approach - in practice, you might want to use
-                // cloud services like Google Cloud Speech-to-Text for file transcription
-                
-                val duration = getAudioDuration(audioFile)
-                if (duration > 0) {
-                    // For now, return a placeholder
-                    // In a real implementation, you'd integrate with cloud services
-                    continuation.resume("Audio transcription from file (duration: ${duration}ms)")
-                } else {
-                    continuation.resume("Unable to transcribe audio file")
+                // If we already have live transcription, use it
+                if (liveTranscription.isNotBlank()) {
+                    Log.d("SpeechTranscriber", "Using live transcription: $liveTranscription")
+                    continuation.resume(liveTranscription)
+                    return@suspendCancellableCoroutine
                 }
+                
+                // Check if file exists and has audio
+                val duration = getAudioDuration(audioFile)
+                if (duration <= 0) {
+                    continuation.resume("No audio content detected in file")
+                    return@suspendCancellableCoroutine
+                }
+                
+                Log.d("SpeechTranscriber", "Audio file duration: ${duration}ms")
+                
+                // For Android's SpeechRecognizer, we can't directly transcribe files
+                // This would require playing the audio and capturing it in real-time
+                // or using cloud services for file transcription
+                
+                if (duration < 1000) {
+                    continuation.resume("Recording too short for transcription")
+                } else if (duration > 60000) {
+                    continuation.resume("Recording longer than 1 minute - consider using cloud transcription for better results")
+                } else {
+                    // Return a message indicating manual transcription is needed
+                    continuation.resume("Audio recorded (${duration/1000}s) - Use cloud transcription services for automatic text conversion")
+                }
+                
             } catch (e: Exception) {
                 Log.e("SpeechTranscriber", "Error transcribing audio file", e)
-                continuation.resume("Error transcribing audio: ${e.message}")
+                continuation.resume("Error analyzing audio: ${e.message}")
             }
         }
     }

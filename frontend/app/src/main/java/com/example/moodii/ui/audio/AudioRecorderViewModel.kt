@@ -111,8 +111,11 @@ class AudioRecorderViewModel(application: Application) : AndroidViewModel(applic
                 Log.d("AudioRecorderViewModel", "Recording stopped, file saved: ${recordedFile.absolutePath}")
                 
                 // If real-time transcription didn't capture much, try file transcription
-                if (_state.value.transcription.isBlank()) {
+                if (_state.value.transcription.isBlank() || _state.value.transcription.length < 10) {
+                    Log.d("AudioRecorderViewModel", "Live transcription was empty or too short, attempting file analysis")
                     transcribeAudioFile(recordedFile)
+                } else {
+                    Log.d("AudioRecorderViewModel", "Using live transcription: ${_state.value.transcription}")
                 }
             } else {
                 showAlert("Recording failed to save", "Error")
@@ -319,6 +322,15 @@ class AudioRecorderViewModel(application: Application) : AndroidViewModel(applic
         _state.value = _state.value.copy(alertMessage = null)
     }
 
+    // Manual transcription for testing when microphone doesn't work
+    fun setManualTranscription(text: String) {
+        _state.value = _state.value.copy(
+            transcription = text,
+            transcriptionError = null
+        )
+        Log.d("AudioRecorderViewModel", "Manual transcription set: $text")
+    }
+
     // Transcription methods
     private fun startTranscription() {
         if (!speechTranscriber.isAvailable()) {
@@ -355,7 +367,9 @@ class AudioRecorderViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch {
             try {
                 _state.value = _state.value.copy(isTranscribing = true)
-                val transcription = speechTranscriber.transcribeAudioFile(audioFile)
+                // Pass the current live transcription to avoid re-processing
+                val currentTranscription = _state.value.transcription
+                val transcription = speechTranscriber.transcribeAudioFile(audioFile, currentTranscription)
                 _state.value = _state.value.copy(
                     transcription = transcription,
                     isTranscribing = false,
