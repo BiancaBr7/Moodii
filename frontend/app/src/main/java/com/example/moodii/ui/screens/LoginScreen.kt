@@ -30,6 +30,9 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.moodii.ui.auth.login.LoginViewModel
 import com.example.moodii.ui.auth.login.LoginState
+import com.example.moodii.ui.components.AppBackground
+import com.example.moodii.ui.components.AppLogo
+import com.example.moodii.ui.components.LogoSize
 import com.example.moodii.ui.navigation.AppDestinations
 import com.example.moodii.ui.theme.PixelatedAppTheme // Ensure your custom theme is imported
 
@@ -57,12 +60,11 @@ fun LoginScreen(navController: NavHostController, viewModel: LoginViewModel = vi
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background), // Uses background color from your PixelatedAppTheme
-        contentAlignment = Alignment.Center
-    ) {
+    AppBackground {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
         Column(
             modifier = Modifier
                 .padding(16.dp)
@@ -79,6 +81,19 @@ fun LoginScreen(navController: NavHostController, viewModel: LoginViewModel = vi
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Logo at 1/3 width of login box
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.33f)
+                    .padding(bottom = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                AppLogo(
+                    size = LogoSize.Medium,
+                    showText = false
+                )
+            }
+            
             Text(
                 text = "LOGIN",
                 fontSize = 18.sp,
@@ -307,6 +322,7 @@ fun LoginScreen(navController: NavHostController, viewModel: LoginViewModel = vi
             }
         }
     }
+}
 }
 
 @Preview(showBackground = true, showSystemUi = true)

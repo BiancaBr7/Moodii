@@ -27,6 +27,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.moodii.data.moodlog.MoodLog
+import com.example.moodii.ui.components.AppBackground
 import com.example.moodii.ui.components.LogEntry
 import com.example.moodii.ui.theme.*
 import java.text.SimpleDateFormat
@@ -44,10 +45,9 @@ fun DayViewScreen(
         viewModel.loadMoodLogsForDate(selectedDate)
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AudioRecorderBackgroundPage)
+    AppBackground {
+        Column(
+            modifier = Modifier.fillMaxSize()
             .padding(16.dp)
     ) {
         // Header with back button
@@ -169,6 +169,7 @@ fun DayViewScreen(
             }
         }
     }
+}
 }
 
 private fun buildLogContent(moodLog: MoodLog): String {

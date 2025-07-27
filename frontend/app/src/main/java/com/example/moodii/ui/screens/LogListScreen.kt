@@ -23,17 +23,17 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.moodii.R
+import com.example.moodii.ui.components.AppBackground
 
 @Composable
 fun LogListScreen(navController: NavHostController) {
     val pixelFont = FontFamily(Font(R.font.press_start_2p))
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFD2BBF1)), // #d2bbf1
-        contentAlignment = Alignment.Center
-    ) {
+    AppBackground {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
         Column(
             modifier = Modifier
                 .widthIn(max = 360.dp)
@@ -140,6 +140,7 @@ fun LogListScreen(navController: NavHostController) {
             }
         }
     }
+}
 }
 
 @Preview(showBackground = true, showSystemUi = true)

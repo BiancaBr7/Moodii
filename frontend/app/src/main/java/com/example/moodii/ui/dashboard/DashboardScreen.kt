@@ -35,6 +35,9 @@ import com.example.moodii.data.moodlog.MoodLog
 import com.example.moodii.ui.screens.AudioRecorderScreen
 import com.example.moodii.ui.navigation.AppDestinations
 import com.example.moodii.ui.theme.*
+import com.example.moodii.ui.components.AppBackground
+import com.example.moodii.ui.components.AppLogo
+import com.example.moodii.ui.components.LogoSize
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -46,17 +49,13 @@ fun DashboardScreen(
     val state by viewModel.state.collectAsState()
     var showAddMoodDialog by remember { mutableStateOf(false) }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AudioRecorderBackgroundPage)
-    ) {
+    AppBackground {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            // Header with logout button
+            // Header with logo and logout button
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -64,9 +63,15 @@ fun DashboardScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Logo on the left
+                AppLogo(
+                    size = LogoSize.Small,
+                    showText = false
+                )
+                
                 Text(
                     text = "MOOD TRACKER",
-                    fontSize = 24.sp,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = AudioRecorderTextPrimary,
                     fontFamily = PressStart2P,
@@ -122,20 +127,24 @@ fun DashboardScreen(
             }
         }
 
-        // Floating Add Button
-        FloatingActionButton(
-            onClick = { showAddMoodDialog = true },
+        // Floating Add Button (positioned within the AppBackground Box)
+        Box(
             modifier = Modifier
-                .align(Alignment.BottomEnd)
+                .fillMaxSize()
                 .padding(16.dp),
-            containerColor = AudioRecorderButtonDefault,
-            contentColor = Color.White
+            contentAlignment = Alignment.BottomEnd
         ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Add Mood",
-                modifier = Modifier.size(24.dp)
-            )
+            FloatingActionButton(
+                onClick = { showAddMoodDialog = true },
+                containerColor = AudioRecorderButtonDefault,
+                contentColor = Color.White
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add Mood",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
 
         // Add Mood Dialog

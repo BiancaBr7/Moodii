@@ -38,7 +38,11 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.example.moodii.ui.components.AudioPlayer
 import com.example.moodii.ui.audio.AudioRecorderViewModel
+import com.example.moodii.ui.components.AppBackground
+import com.example.moodii.ui.components.AppLogo
+import com.example.moodii.ui.components.LogoSize
 import com.example.moodii.ui.theme.* // Import all custom colors and theme components
 
 // Extension function for pixelated font sizing (from previous discussions)
@@ -92,22 +96,25 @@ fun AudioRecorderScreen(
         // Note: Alert is now handled by ViewModel
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AudioRecorderBackgroundPage) // Corrected background color to match HTML's light purple
-            .padding(20.dp),
-        contentAlignment = Alignment.Center
+    AppBackground(
+        showOverlay = true,
+        overlayAlpha = 0.6f
     ) {
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 400.dp) // Max width for larger screens
-                .background(
-                    AudioRecorderContainerBg, // bg-[#f0e6fa]
-                    shape = RoundedCornerShape(12.dp)
-                )
-                .border(4.dp, AudioRecorderBorderThick, RoundedCornerShape(12.dp)) // Thicker, pixelated border
+                .fillMaxSize()
+                .padding(20.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 400.dp) // Max width for larger screens
+                    .background(
+                        AudioRecorderContainerBg, // bg-[#f0e6fa]
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .border(4.dp, AudioRecorderBorderThick, RoundedCornerShape(12.dp)) // Thicker, pixelated border
 //                .shadow(
 //                    elevation = 6.dp, // Pixelated shadow
 //                    shape = RoundedCornerShape(12.dp),
@@ -503,6 +510,7 @@ fun AudioRecorderScreen(
             }
         }
     }
+}
 }
 
 
