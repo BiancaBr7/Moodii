@@ -25,14 +25,6 @@ Moodii is a voice-driven mood tracking app designed to help users reflect on the
 
 ---
 
-## Getting Started
-
-### Prerequisites
-
-- Android Studio (for frontend development)  
-- Java 17+ and Maven (for backend)  
-- Docker (for containerized deployment)  
-
-### Still Working on...
+## Still Working on...
 - Improving Model Performance
 - Improving frontent user experience
