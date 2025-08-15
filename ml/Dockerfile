@@ -6,15 +6,18 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV MODEL_DIR=/app/ml/models
 
-# Create and set working directory
+# Set working directory
 WORKDIR /app
 
 # Copy requirements first to leverage Docker cache
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the entire project
-COPY . .
+# Copy model and source code
+COPY model_CLSTM_20_82.h5 .
+COPY api.py .
+COPY model.py .
+COPY utils.py .
 
 # Ensure the models directory exists
 RUN mkdir -p ${MODEL_DIR}
@@ -23,4 +26,4 @@ RUN mkdir -p ${MODEL_DIR}
 EXPOSE 5000
 
 # Command to run the API
-CMD ["python", "ml/api/app.py"]
+CMD ["python", "api.py"]
