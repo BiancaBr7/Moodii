@@ -450,28 +450,28 @@ fun AudioRecorderScreen(
             }
             
             // Test Save Button (for development)
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(
-                onClick = {
-                    viewModel.testSaveMoodLog()
-                },
-                enabled = !state.isSaving,
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF32CD32), // LimeGreen for test button
-                    contentColor = Color.White
-                )
-            ) {
-                Text(
-                    text = "TEST SAVE (No Recording)",
-                    fontSize = 14.sp,
-                    fontFamily = PressStart2P,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+//            Spacer(modifier = Modifier.height(8.dp))
+//            Button(
+//                onClick = {
+//                    viewModel.testSaveMoodLog()
+//                },
+//                enabled = !state.isSaving,
+//                shape = RoundedCornerShape(8.dp),
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .height(50.dp),
+//                colors = ButtonDefaults.buttonColors(
+//                    containerColor = Color(0xFF32CD32), // LimeGreen for test button
+//                    contentColor = Color.White
+//                )
+//            ) {
+//                Text(
+//                    text = "TEST SAVE (No Recording)",
+//                    fontSize = 14.sp,
+//                    fontFamily = PressStart2P,
+//                    fontWeight = FontWeight.Bold
+//                )
+//            }
         }
 
         // Custom Alert Message (fixed at bottom)
