@@ -1,27 +1,65 @@
-# Use a pre-built Android development image
-FROM cimg/android:2024.01.1
+# Multi-stage Android build
+FROM openjdk:17-jdk-slim as builder
+
+# Set environment variables
+ENV ANDROID_HOME=/opt/android-sdk
+ENV PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    unzip \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Android SDK
+RUN mkdir -p $ANDROID_HOME/cmdline-tools && \
+    cd $ANDROID_HOME/cmdline-tools && \
+    wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip && \
+    unzip -q commandlinetools-linux-9477386_latest.zip && \
+    mv cmdline-tools latest && \
+    rm commandlinetools-linux-9477386_latest.zip
+
+# Accept licenses and install SDK components
+RUN yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses && \
+    $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+        "platform-tools" \
+        "platforms;android-34" \
+        "build-tools;34.0.0"
 
 # Set working directory
 WORKDIR /app
 
-# Set environment variables for Gradle
-ENV GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false"
-
-# Copy only necessary files first for better caching
+# Copy project files (excluding problematic files)
 COPY gradle.properties ./
-COPY gradlew ./
-COPY gradle/ ./gradle/
 COPY build.gradle.kts ./
 COPY settings.gradle.kts ./
+COPY gradle/ ./gradle/
+COPY gradlew ./
+COPY app/ ./app/
 
-# Make gradlew executable and download dependencies
-RUN chmod +x gradlew && ./gradlew dependencies --no-daemon || true
+# Make gradlew executable
+RUN chmod +x gradlew
 
-# Copy the rest of the project
-COPY . .
-
-# Build the Android project (simple approach)
+# Build the APK
 RUN ./gradlew assembleDebug --no-daemon --stacktrace
 
-# This is a build container - the APK will be in app/build/outputs/apk/
-CMD ["echo", "Android build complete. APK available in app/build/outputs/apk/debug/"]
+# Final stage - extract APK only
+FROM scratch as apk-extractor
+
+# Copy APK from builder
+COPY --from=builder /app/app/build/outputs/apk/debug/*.apk /
+
+# Runtime stage for running container
+FROM alpine:latest
+
+# Install file utilities
+RUN apk add --no-cache file
+
+# Copy APK from builder
+COPY --from=builder /app/app/build/outputs/apk/debug/*.apk /output/
+
+# Show APK info
+CMD ["sh", "-c", "ls -la /output/ && file /output/*.apk && echo 'Android APK ready for installation!'"]

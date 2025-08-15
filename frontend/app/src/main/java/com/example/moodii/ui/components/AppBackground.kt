@@ -51,7 +51,7 @@ fun AppBackground(
         
         // Background image
         Image(
-            painter = painterResource(id = R.drawable.app_background),
+            painter = painterResource(id = R.drawable.app_background_image),
             contentDescription = "Background",
             modifier = Modifier
                 .fillMaxSize()
@@ -111,7 +111,7 @@ fun AppLogo(
             ) {
                 // Use the custom logo
                 Image(
-                    painter = painterResource(id = R.drawable.app_logo),
+                    painter = painterResource(id = R.drawable.app_logo_image),
                     contentDescription = "Moodii Logo",
                     modifier = Modifier.size(logoSizeDp * 0.8f),
                     contentScale = ContentScale.Fit

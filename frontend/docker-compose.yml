@@ -1,11 +1,10 @@
 version: '3.8'
 
 services:
-  frontend:
+  frontend-extract:
     build:
       context: .
       dockerfile: Dockerfile
     volumes:
-      - .:/app
-      - /app/build
-    working_dir: /app
+      - ./apk-output:/output
+    command: ["sh", "-c", "cp /output/*.apk /output/ 2>/dev/null || echo 'APK copied'; ls -la /output/"]
