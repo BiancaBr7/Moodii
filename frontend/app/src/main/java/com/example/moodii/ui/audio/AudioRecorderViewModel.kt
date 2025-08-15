@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.moodii.api.moodlog.MoodLogClient
 import com.example.moodii.data.moodlog.MoodLog
 import com.example.moodii.data.moodlog.MoodLogRequest
+import com.example.moodii.repository.ml.MLRepository
 import com.example.moodii.utils.AuthManager
 import com.example.moodii.utils.AudioRecorder
 import com.example.moodii.utils.SpeechTranscriber
@@ -32,7 +33,12 @@ data class AudioRecorderState(
     val alertMessage: Pair<String, String>? = null, // message, type
     val needsPermission: Boolean = false,
     val isTranscribing: Boolean = false,
-    val transcriptionError: String? = null
+    val transcriptionError: String? = null,
+    val isAnalyzingEmotion: Boolean = false,
+    val emotionPredictionError: String? = null,
+    val mlApiHealthy: Boolean = false,
+    val allEmotionPredictions: Map<String, Double>? = null,
+    val predictionConfidence: Double? = null
 )
 
 class AudioRecorderViewModel(application: Application) : AndroidViewModel(application) {
@@ -43,6 +49,7 @@ class AudioRecorderViewModel(application: Application) : AndroidViewModel(applic
     private val authManager = AuthManager(application)
     private val audioRecorder = AudioRecorder(application)
     private val speechTranscriber = SpeechTranscriber(application)
+    private val mlRepository = MLRepository()
     private var audioFile: File? = null
 
     fun checkPermissions() {
@@ -83,8 +90,8 @@ class AudioRecorderViewModel(application: Application) : AndroidViewModel(applic
                 // Start real-time transcription
                 startTranscription()
                 
-                // Simulate mood prediction for now - replace with actual ML integration
-                simulateMoodPrediction()
+                // Check ML API health
+                checkMLHealth()
             } else {
                 showAlert("Failed to start recording", "Error")
             }
@@ -117,6 +124,9 @@ class AudioRecorderViewModel(application: Application) : AndroidViewModel(applic
                 } else {
                     Log.d("AudioRecorderViewModel", "Using live transcription: ${_state.value.transcription}")
                 }
+                
+                // Analyze emotion using ML API
+                analyzeEmotionWithML(recordedFile)
             } else {
                 showAlert("Recording failed to save", "Error")
             }
@@ -278,11 +288,105 @@ class AudioRecorderViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
+    private fun checkMLHealth() {
+        viewModelScope.launch {
+            try {
+                Log.d("AudioRecorderViewModel", "Checking ML API health...")
+                val result = mlRepository.checkMLHealth()
+                
+                result.onSuccess { health ->
+                    Log.d("AudioRecorderViewModel", "ML API is healthy: ${health.status}")
+                    _state.value = _state.value.copy(
+                        mlApiHealthy = true,
+                        emotionPredictionError = null
+                    )
+                }.onFailure { error ->
+                    Log.e("AudioRecorderViewModel", "ML API health check failed", error)
+                    _state.value = _state.value.copy(
+                        mlApiHealthy = false,
+                        emotionPredictionError = "ML API not available: ${error.message}"
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("AudioRecorderViewModel", "Error checking ML health", e)
+                _state.value = _state.value.copy(
+                    mlApiHealthy = false,
+                    emotionPredictionError = "Failed to connect to ML API"
+                )
+            }
+        }
+    }
+    
+    private fun analyzeEmotionWithML(audioFile: File) {
+        viewModelScope.launch {
+            try {
+                _state.value = _state.value.copy(
+                    isAnalyzingEmotion = true,
+                    emotionPredictionError = null
+                )
+                
+                Log.d("AudioRecorderViewModel", "Starting emotion analysis with ML API...")
+                Log.d("AudioRecorderViewModel", "Audio file: ${audioFile.absolutePath}")
+                Log.d("AudioRecorderViewModel", "File size: ${audioFile.length()} bytes")
+                
+                val result = mlRepository.predictEmotion(audioFile)
+                
+                result.onSuccess { prediction ->
+                    Log.d("AudioRecorderViewModel", "Emotion prediction successful!")
+                    Log.d("AudioRecorderViewModel", "Predicted emotion: ${prediction.predicted_emotion}")
+                    Log.d("AudioRecorderViewModel", "Confidence: ${prediction.confidence}")
+                    Log.d("AudioRecorderViewModel", "All predictions: ${prediction.all_predictions}")
+                    
+                    _state.value = _state.value.copy(
+                        predictedMood = prediction.predicted_emotion,
+                        allEmotionPredictions = prediction.all_predictions,
+                        predictionConfidence = prediction.confidence,
+                        isAnalyzingEmotion = false,
+                        emotionPredictionError = null
+                    )
+                    
+                    showAlert("Emotion detected: ${prediction.predicted_emotion} (${(prediction.confidence * 100).toInt()}% confidence)", "Success")
+                    
+                }.onFailure { error ->
+                    Log.e("AudioRecorderViewModel", "Emotion prediction failed", error)
+                    _state.value = _state.value.copy(
+                        isAnalyzingEmotion = false,
+                        emotionPredictionError = "Emotion analysis failed: ${error.message}"
+                    )
+                    
+                    // Fall back to simulated prediction
+                    Log.d("AudioRecorderViewModel", "Falling back to simulated mood prediction")
+                    simulateMoodPrediction()
+                    showAlert("Using simulated mood prediction (ML API unavailable)", "Info")
+                }
+                
+            } catch (e: Exception) {
+                Log.e("AudioRecorderViewModel", "Error during emotion analysis", e)
+                _state.value = _state.value.copy(
+                    isAnalyzingEmotion = false,
+                    emotionPredictionError = "Emotion analysis error: ${e.message}"
+                )
+                
+                // Fall back to simulated prediction
+                simulateMoodPrediction()
+                showAlert("Using simulated mood prediction (error occurred)", "Info")
+            }
+        }
+    }
+
     private fun simulateMoodPrediction() {
-        // Simulate mood prediction - replace with actual ML integration
+        // Fallback simulation when ML API is not available
         val moods = listOf("happy", "sad", "mad", "surprised", "neutral")
         val randomMood = moods.random()
-        _state.value = _state.value.copy(predictedMood = randomMood)
+        _state.value = _state.value.copy(
+            predictedMood = randomMood,
+            allEmotionPredictions = mapOf(
+                randomMood to 0.75,
+                "neutral" to 0.25
+            ),
+            predictionConfidence = 0.75
+        )
+        Log.d("AudioRecorderViewModel", "Simulated mood: $randomMood")
     }
 
     private fun simulateTranscription() {
@@ -305,6 +409,42 @@ class AudioRecorderViewModel(application: Application) : AndroidViewModel(applic
 
     private fun showAlert(message: String, type: String) {
         _state.value = _state.value.copy(alertMessage = Pair(message, type))
+    }
+
+    fun testMLConnection() {
+        viewModelScope.launch {
+            try {
+                Log.d("AudioRecorderViewModel", "Testing ML API connection...")
+                showAlert("Testing ML API connection...", "Info")
+                
+                val result = mlRepository.testMLConnection()
+                
+                result.onSuccess { summary ->
+                    Log.d("AudioRecorderViewModel", "ML API test successful!")
+                    Log.d("AudioRecorderViewModel", summary)
+                    _state.value = _state.value.copy(
+                        mlApiHealthy = true,
+                        emotionPredictionError = null
+                    )
+                    showAlert("ML API connection successful!", "Success")
+                }.onFailure { error ->
+                    Log.e("AudioRecorderViewModel", "ML API test failed", error)
+                    _state.value = _state.value.copy(
+                        mlApiHealthy = false,
+                        emotionPredictionError = "ML API test failed: ${error.message}"
+                    )
+                    showAlert("ML API connection failed: ${error.message}", "Error")
+                }
+                
+            } catch (e: Exception) {
+                Log.e("AudioRecorderViewModel", "Error testing ML connection", e)
+                _state.value = _state.value.copy(
+                    mlApiHealthy = false,
+                    emotionPredictionError = "Connection test error: ${e.message}"
+                )
+                showAlert("Connection test error: ${e.message}", "Error")
+            }
+        }
     }
 
     fun testSaveMoodLog() {

@@ -336,6 +336,77 @@ fun AudioRecorderScreen(
                 }
             }
 
+            // ML API Status Section
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AudioRecorderMoodSection, RoundedCornerShape(8.dp))
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "ML API Status",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = AudioRecorderTextPrimary,
+                    fontFamily = PressStart2P,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (state.mlApiHealthy) "🟢 Connected" else "🔴 Disconnected",
+                        fontSize = 12.sp,
+                        color = AudioRecorderTextPrimary,
+                        fontFamily = MaterialTheme.typography.bodyMedium.fontFamily
+                    )
+                    
+                    if (state.isAnalyzingEmotion) {
+                        Text(
+                            text = "🔄 Analyzing...",
+                            fontSize = 12.sp,
+                            color = AudioRecorderTextPrimary,
+                            fontFamily = MaterialTheme.typography.bodyMedium.fontFamily
+                        )
+                    }
+                }
+                
+                state.predictionConfidence?.let { confidence ->
+                    Text(
+                        text = "Confidence: ${(confidence * 100).toInt()}%",
+                        fontSize = 10.sp,
+                        color = AudioRecorderTextPrimary.copy(alpha = 0.8f),
+                        fontFamily = MaterialTheme.typography.bodyMedium.fontFamily
+                    )
+                }
+                
+                // Test ML Connection Button
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = { viewModel.testMLConnection() },
+                    enabled = !state.isAnalyzingEmotion,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(40.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF4CAF50),
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text(
+                        text = "TEST ML API",
+                        fontSize = 10.sp,
+                        fontFamily = PressStart2P,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
             // Transcription Section
             Column(
                 modifier = Modifier
