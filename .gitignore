@@ -16,25 +16,28 @@ target/
 .env
 *.iml
 
-# ML - Models and Data (production exclusions)
-ml/api/
+# ML assets (keep code, ignore large data / model artifacts)
 ml/data/
 ml/models/
-ml/processed_data/
 ml/scripts/
-ml/CNN+LSTM_Model/api/
+ml/api/
+ml/requirements.txt
+ml/Dockerfile
+ml/processed_data/
 ml/CNN+LSTM_Model/data/
 ml/CNN+LSTM_Model/models/
 ml/CNN+LSTM_Model/processed_data/
-ml/CNN+LSTM_Model/scripts/
+ml/CNN+LSTM_Model/venv/
+ml/CNN+LSTM_Model/__pycache__/
 ml/CNN+LSTM_Model/*.h5
 ml/CNN+LSTM_Model/*.pkl
 ml/CNN+LSTM_Model/*.csv
 ml/CNN+LSTM_Model/*.log
-ml/CNN+LSTM_Model/venv/
-ml/CNN+LSTM_Model/__pycache__/
-ml/requirements.txt
 ml-text-to-emotion
+
+# (NOTE) Previously you ignored ml/api/, scripts/, and requirements.txt which contain source code & env spec.
+# They are now tracked so the ML service is reproducible. If you truly need to exclude something sensitive,
+# add only specific files (e.g. ml/.env).
 
 # Python specific
 __pycache__/
@@ -72,4 +75,38 @@ ENV/
 *.flac
 *.m4a
 *.ogg
+
+# Android / Gradle build artifacts & caches
+.gradle/
+frontend/.gradle/
+frontend/app/build/
+frontend/build/
+frontend/apk-output/
+**/build/outputs/
+*.apk
+*.aab
+
+# Keystores & signing (DO NOT COMMIT real keys)
+*.jks
+*.keystore
+frontend/keystore/
+
+# Backend runtime artifacts
+backend/moodii/logs/
+backend/moodii/uploads/
+
+# Misc
+*.hprof
+*.swp
+*.tmp
+*.bak
+
+# Deployment metadata (generated; not source)
+*deployment*.json
+backend-deployment.json
+ml-deployment-*.json
+deployment-info.json
+deployment-aci.json
+clean-deployment.json
+
 
