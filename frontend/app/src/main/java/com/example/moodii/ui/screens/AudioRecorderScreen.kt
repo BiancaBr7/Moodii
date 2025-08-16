@@ -359,7 +359,7 @@ fun AudioRecorderScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (state.mlApiHealthy) "🟢 Connected" else "🔴 Disconnected",
+                        text = if (state.predictedMood != null && !state.isAnalyzingEmotion) "🟢 Ready" else if (state.isAnalyzingEmotion) "🔄 Working" else "⚪ Idle",
                         fontSize = 12.sp,
                         color = AudioRecorderTextPrimary,
                         fontFamily = MaterialTheme.typography.bodyMedium.fontFamily

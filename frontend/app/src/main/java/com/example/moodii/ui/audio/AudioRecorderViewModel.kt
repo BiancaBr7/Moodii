@@ -90,8 +90,7 @@ class AudioRecorderViewModel(application: Application) : AndroidViewModel(applic
                 // Start real-time transcription
                 startTranscription()
                 
-                // Check ML API health
-                checkMLHealth()
+                // ML health check removed; will attempt prediction after recording
             } else {
                 showAlert("Failed to start recording", "Error")
             }
@@ -288,34 +287,7 @@ class AudioRecorderViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
-    private fun checkMLHealth() {
-        viewModelScope.launch {
-            try {
-                Log.d("AudioRecorderViewModel", "Checking ML API health...")
-                val result = mlRepository.checkMLHealth()
-                
-                result.onSuccess { health ->
-                    Log.d("AudioRecorderViewModel", "ML API is healthy: ${health.status}")
-                    _state.value = _state.value.copy(
-                        mlApiHealthy = true,
-                        emotionPredictionError = null
-                    )
-                }.onFailure { error ->
-                    Log.e("AudioRecorderViewModel", "ML API health check failed", error)
-                    _state.value = _state.value.copy(
-                        mlApiHealthy = false,
-                        emotionPredictionError = "ML API not available: ${error.message}"
-                    )
-                }
-            } catch (e: Exception) {
-                Log.e("AudioRecorderViewModel", "Error checking ML health", e)
-                _state.value = _state.value.copy(
-                    mlApiHealthy = false,
-                    emotionPredictionError = "Failed to connect to ML API"
-                )
-            }
-        }
-    }
+    // Removed checkMLHealth – ML availability inferred from prediction success/failure
     
     private fun analyzeEmotionWithML(audioFile: File) {
         viewModelScope.launch {
