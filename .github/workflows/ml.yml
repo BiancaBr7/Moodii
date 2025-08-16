@@ -34,9 +34,9 @@ jobs:
       run: |
         if [ -d ml/CNN+LSTM_Model/tests ]; then pytest -q ml/CNN+LSTM_Model/tests; else echo "No tests directory"; fi
 
-    # Step 5: Build Docker image
+    # Step 5: Build Docker image (use model directory as context so requirements.txt is present)
     - name: Build Docker image
-      run: docker build -f ml/CNN+LSTM_Model/Dockerfile -t moodii-ml:${{ github.sha }} .
+      run: docker build -f ml/CNN+LSTM_Model/Dockerfile -t moodii-ml:${{ github.sha }} ml/CNN+LSTM_Model
 
     # Step 6: Push Docker image to Docker Hub
     - name: Log in to Docker Hub
