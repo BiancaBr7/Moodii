@@ -52,6 +52,14 @@ jobs:
           echo "backend_image=$REPO_LC/backend" >> $GITHUB_OUTPUT
           echo "ml_image=$REPO_LC/ml-api" >> $GITHUB_OUTPUT
 
+      - name: Determine deploy flag
+        run: |
+          if [ -n "${{ secrets.SSH_USER }}" ] && [ -n "${{ secrets.SSH_HOST }}" ]; then
+            echo "DEPLOY=true" >> $GITHUB_ENV
+          else
+            echo "DEPLOY=false" >> $GITHUB_ENV
+          fi
+
       - name: Build Docker image
         run: docker build -f backend/moodii/Dockerfile -t ${{ env.REGISTRY }}/${{ steps.names.outputs.backend_image }}:${{ github.sha }} backend/moodii
 
@@ -66,7 +74,7 @@ jobs:
         run: docker push ${{ env.REGISTRY }}/${{ steps.names.outputs.backend_image }}:${{ github.sha }}
 
       - name: Deploy to server (optional)
-        if: ${{ secrets.SSH_USER != '' && secrets.SSH_HOST != '' && github.ref == 'refs/heads/main' }}
+        if: github.ref == 'refs/heads/main' && env.DEPLOY == 'true'
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
             docker pull ${{ env.REGISTRY }}/${{ steps.names.outputs.backend_image }}:${{ github.sha }}
@@ -75,6 +83,6 @@ jobs:
             docker run -d --name moodii-backend -p 8080:8080 ${{ env.REGISTRY }}/${{ steps.names.outputs.backend_image }}:${{ github.sha }}
           EOF
       - name: Skip deploy (no SSH secrets)
-        if: ${{ !(secrets.SSH_USER != '' && secrets.SSH_HOST != '' && github.ref == 'refs/heads/main') }}
+        if: env.DEPLOY != 'true'
         run: |
           echo 'Skipping SSH deploy: missing secrets or not on main branch.'
