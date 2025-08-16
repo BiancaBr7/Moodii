@@ -30,50 +30,37 @@ jobs:
           name: backend-jar
           path: backend/moodii/target/*.jar
 
-  # backend-docker:
-  #   needs: build-backend
-  #   runs-on: ubuntu-latest
-  #   if: github.ref == 'refs/heads/main'
-  #   env:
-  #     ACR_NAME: ${{ secrets.AZURE_ACR_NAME }}
-  #     IMAGE_TAG: ${{ github.sha }}
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #     - name: Azure login
-  #       uses: azure/login@v2
-  #       with:
-  #         creds: ${{ secrets.AZURE_CREDENTIALS }}
-  #     - name: Build & Push backend image
-  #       uses: azure/cli@v2
-  #       with:
-  #         inlineScript: |
-  #           az acr login --name $ACR_NAME
-  #           docker build -t $ACR_NAME.azurecr.io/moodii-backend:$IMAGE_TAG -f backend/moodii/Dockerfile backend/moodii
-  #           docker push $ACR_NAME.azurecr.io/moodii-backend:$IMAGE_TAG
-  #     - name: Output image tag
-  #       run: echo "backend_image=$ACR_NAME.azurecr.io/moodii-backend:$IMAGE_TAG" >> $GITHUB_OUTPUT
+  backend-docker:
+    needs: build-backend
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    env:
+      ACR_NAME: ${{ secrets.AZURE_ACR_NAME }}
+      IMAGE_TAG: ${{ github.sha }}
+    steps:
+      - name: Skip backend container build (Azure creds missing or disabled)
+        run: echo "Skipping backend Docker/Azure steps."
 
-  # ml-docker:
-  #   runs-on: ubuntu-latest
-  #   if: github.ref == 'refs/heads/main'
-  #   env:
-  #     ACR_NAME: ${{ secrets.AZURE_ACR_NAME }}
-  #     IMAGE_TAG: ${{ github.sha }}
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #     - name: Azure login
-  #       uses: azure/login@v2
-  #       with:
-  #         creds: ${{ secrets.AZURE_CREDENTIALS }}
-  #     - name: Build & Push ML image (CNN+LSTM)
-  #       uses: azure/cli@v2
-  #       with:
-  #         inlineScript: |
-  #           az acr login --name $ACR_NAME
-  #           docker build -t $ACR_NAME.azurecr.io/moodii-ml-cnnlstm:$IMAGE_TAG -f ml/CNN+LSTM_Model/Dockerfile ml/CNN+LSTM_Model
-  #           docker push $ACR_NAME.azurecr.io/moodii-ml-cnnlstm:$IMAGE_TAG
+  ml-docker:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    env:
+      ACR_NAME: ${{ secrets.AZURE_ACR_NAME }}
+      IMAGE_TAG: ${{ github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Build & Push ML image (CNN+LSTM)
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az acr login --name $ACR_NAME
+            docker build -t $ACR_NAME.azurecr.io/moodii-ml-cnnlstm:$IMAGE_TAG -f ml/CNN+LSTM_Model/Dockerfile ml/CNN+LSTM_Model
+            docker push $ACR_NAME.azurecr.io/moodii-ml-cnnlstm:$IMAGE_TAG
 
   android-build:
     runs-on: ubuntu-latest
@@ -109,43 +96,5 @@ jobs:
       ML_IMAGE_TAG: ${{ github.sha }}
       BACKEND_IMAGE_TAG: ${{ github.sha }}
     steps:
-      - name: Azure login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - name: Deploy backend container instance
-        uses: azure/cli@v2
-        with:
-          inlineScript: |
-            az acr login --name $ACR_NAME
-            az container create \
-              --resource-group $RESOURCE_GROUP \
-              --name moodii-backend \
-              --image $ACR_NAME.azurecr.io/moodii-backend:$BACKEND_IMAGE_TAG \
-              --ports 8080 \
-              --cpu 1 --memory 2 \
-              --restart-policy Always \
-              --environment-variables SPRING_DATA_MONGODB_URI=$MONGO_URI ML_API_URL="http://moodii-ml-cnnlstm.eastus.azurecontainer.io:5000" \
-              --registry-login-server $ACR_NAME.azurecr.io \
-              --registry-username ${{ secrets.AZURE_ACR_USERNAME }} \
-              --registry-password ${{ secrets.AZURE_ACR_PASSWORD }} || az container restart --name moodii-backend --resource-group $RESOURCE_GROUP
-      - name: Deploy ML container instance (CNN+LSTM)
-        uses: azure/cli@v2
-        with:
-          inlineScript: |
-            az container create \
-              --resource-group $RESOURCE_GROUP \
-              --name moodii-ml-cnnlstm \
-              --image $ACR_NAME.azurecr.io/moodii-ml-cnnlstm:$ML_IMAGE_TAG \
-              --ports 5000 \
-              --cpu 2 --memory 4 \
-              --restart-policy Always \
-              --registry-login-server $ACR_NAME.azurecr.io \
-              --registry-username ${{ secrets.AZURE_ACR_USERNAME }} \
-              --registry-password ${{ secrets.AZURE_ACR_PASSWORD }} || az container restart --name moodii-ml-cnnlstm --resource-group $RESOURCE_GROUP
-      - name: Show container statuses
-        uses: azure/cli@v2
-        with:
-          inlineScript: |
-            az container show --resource-group $RESOURCE_GROUP --name moodii-backend --query "instanceView.state"
-            az container show --resource-group $RESOURCE_GROUP --name moodii-ml-cnnlstm --query "instanceView.state"
+      - name: Skip Azure deployment (credentials not configured)
+        run: echo "Skipping Azure Container Instance deployment."
