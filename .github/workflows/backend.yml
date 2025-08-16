@@ -11,9 +11,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  REPO_LOWER: ${{ toLower(github.repository) }}
-  BACKEND_IMAGE_NAME: ${{ toLower(github.repository) }}/backend
-  ML_IMAGE_NAME: ${{ toLower(github.repository) }}/ml-api
+  BACKEND_IMAGE_NAME: placeholder/backend
+  ML_IMAGE_NAME: placeholder/ml-api
 
 jobs:
   build-and-deploy:
@@ -45,8 +44,16 @@ jobs:
           chmod +x backend/moodii/mvnw
           ./backend/moodii/mvnw -B -f backend/moodii/pom.xml clean package -DskipTests
 
+      - name: Compute lowercase image names
+        id: names
+        run: |
+          REPO_LC=$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')
+          echo "repo_lower=$REPO_LC" >> $GITHUB_OUTPUT
+          echo "backend_image=$REPO_LC/backend" >> $GITHUB_OUTPUT
+          echo "ml_image=$REPO_LC/ml-api" >> $GITHUB_OUTPUT
+
       - name: Build Docker image
-        run: docker build -f backend/moodii/Dockerfile -t ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }} backend/moodii
+        run: docker build -f backend/moodii/Dockerfile -t ${{ env.REGISTRY }}/${{ steps.names.outputs.backend_image }}:${{ github.sha }} backend/moodii
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -56,13 +63,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push Docker image
-        run: docker push ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
+        run: docker push ${{ env.REGISTRY }}/${{ steps.names.outputs.backend_image }}:${{ github.sha }}
 
       - name: Deploy to server (optional)
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            docker pull ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
+            docker pull ${{ env.REGISTRY }}/${{ steps.names.outputs.backend_image }}:${{ github.sha }}
             docker stop moodii-backend || true
             docker rm moodii-backend || true
-            docker run -d --name moodii-backend -p 8080:8080 ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
+            docker run -d --name moodii-backend -p 8080:8080 ${{ env.REGISTRY }}/${{ steps.names.outputs.backend_image }}:${{ github.sha }}
           EOF
