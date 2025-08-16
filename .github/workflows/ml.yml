@@ -63,16 +63,6 @@ jobs:
     - name: Push Docker image
       run: docker push ${{ steps.meta.outputs.image }}:${{ github.sha }}
 
-    # Step 9: Deploy to server (optional)
-    - name: Deploy to server
-      if: env.SSH_USER != '' && env.SSH_HOST != ''
-      env:
-        SSH_USER: ${{ secrets.SSH_USER }}
-        SSH_HOST: ${{ secrets.SSH_HOST }}
-      run: |
-        ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << EOF
-        docker pull ${{ steps.meta.outputs.image }}:${{ github.sha }}
-        docker stop moodii-ml || true
-        docker rm moodii-ml || true
-        docker run -d --name moodii-ml -p 5000:5000 ${{ steps.meta.outputs.image }}:${{ github.sha }}
-        EOF
+    # Step 9: (Deployment skipped as requested)
+    - name: Skip deploy
+      run: echo "Skipping ML deploy step."
