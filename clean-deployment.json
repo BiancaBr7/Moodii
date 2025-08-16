@@ -1,0 +1,13 @@
+﻿{
+    "timestamp":  "2025-08-15T21:15:11.3116314-04:00",
+    "rg":  "moodii-rg",
+    "location":  "eastus",
+    "acr":  "moodiiacr6425",
+    "image":  "moodiiacr6425.azurecr.io/moodii-backend:mlwired",
+    "container":  "moodii-backend",
+    "backendHost":  "moodii-backend-1852.eastus.azurecontainer.io",
+    "fqdn":  "moodii-backend-1852.eastus.azurecontainer.io",
+    "ip":  "52.224.24.8",
+    "healthUrl":  "http://moodii-backend-1852.eastus.azurecontainer.io:8080/actuator/health",
+    "healthy":  true
+}
