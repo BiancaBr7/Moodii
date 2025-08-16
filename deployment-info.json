@@ -1,9 +1,0 @@
-﻿{
-    "webAppName":  "moodii-backend-7455",
-    "deploymentDate":  "08/15/2025 4:49:30 PM",
-    "storageAccount":  "moodiistorage7455",
-    "resourceGroup":  "moodii-rg",
-    "appServicePlan":  "moodii-plan-7455",
-    "deploymentType":  "App Service",
-    "backendUrl":  "https://moodii-backend-7455.azurewebsites.net"
-}

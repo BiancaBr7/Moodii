@@ -1,24 +1,16 @@
+version: '3.8'
+
 services:
   backend:
-    build:
-      context: ./backend/moodii
-      dockerfile: ../../docker/backend/Dockerfile
+    build: ./docker/backend
     ports:
       - "8080:8080"
+    volumes:
+      - ./backend:/app
 
-  ml-service:
-    build: ./ml
+  ml:
+    build: ./docker/ml
     ports:
       - "8000:8000"
-    environment:
-      - PYTHONUNBUFFERED=1
     volumes:
-      - ./docker/ml/models:/app/models
-  mongodb:
-      image: mongo:latest
-      ports:
-        - "27017:27017"
-      volumes:
-        - ./src/main/resources/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
-      environment:
-        MONGO_INITDB_DATABASE: moodii
+      - ./ml:/app
