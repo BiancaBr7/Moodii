@@ -1,10 +1,15 @@
-# Use official Python image
+# Use Python 3.9 slim (compatible with pinned legacy ML libs)
 FROM python:3.9-slim
 
 # Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-ENV MODEL_DIR=/app/ml/models
+ENV PYTHONDONTWRITEBYTECODE=1 \
+	PYTHONUNBUFFERED=1 \
+	MODEL_DIR=/app/ml/models
+
+# System dependencies for audio processing (librosa -> soundfile -> libsndfile1)
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends libsndfile1 \
+	&& rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
@@ -13,11 +18,9 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy model and source code
-COPY model_CLSTM_20_82.h5 .
-COPY api.py .
-COPY model.py .
-COPY utils.py .
+# Copy application code (simple API variant uses api/app.py and models directory)
+COPY api/app.py ./api.py
+COPY models ./models
 
 # Ensure the models directory exists
 RUN mkdir -p ${MODEL_DIR}

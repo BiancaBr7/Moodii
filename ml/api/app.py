@@ -6,6 +6,10 @@ import os
 
 app = Flask(__name__)
 
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({'status': 'ok'}), 200
+
 # Load model and encoder
 model = joblib.load('../models/mood_model.pkl')
 label_encoder = joblib.load('../models/label_encoder.pkl')

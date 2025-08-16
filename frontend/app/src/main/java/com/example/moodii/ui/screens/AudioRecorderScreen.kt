@@ -384,27 +384,7 @@ fun AudioRecorderScreen(
                     )
                 }
                 
-                // Test ML Connection Button
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = { viewModel.testMLConnection() },
-                    enabled = !state.isAnalyzingEmotion,
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(40.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF4CAF50),
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text(
-                        text = "TEST ML API",
-                        fontSize = 10.sp,
-                        fontFamily = PressStart2P,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                // (Removed ML API test button; prediction implicitly validates service reachability)
             }
 
             // Transcription Section

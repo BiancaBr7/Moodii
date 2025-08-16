@@ -234,6 +234,10 @@ def predict_emotion(features, request_id=None):
 def health_check():
     """Comprehensive health check endpoint"""
     global model, model_load_time, request_count
+    # Attempt lazy load if model not yet loaded (e.g., gunicorn import path)
+    if model is None:
+        logger.info("Health check triggered model load attempt (model was None)")
+        load_emotion_model()
     
     health_status = {
         "status": "healthy" if model is not None else "unhealthy",
@@ -479,35 +483,14 @@ def log_response_info(response):
     logger.info(f"Response: {response.status_code} for {request.method} {request.url}")
     return response
 
+"""Pre-load model at import so gunicorn workers have it ready."""
+if load_emotion_model():
+    logger.info("Model pre-loaded successfully during module import.")
+else:
+    logger.error("Model failed to load during module import; will retry lazily on /health or first prediction.")
+
 if __name__ == '__main__':
-    print("Starting CNN+LSTM Emotion Recognition API (Production Mode)...")
-    print("=" * 60)
-    
-    # Load the model
-    if load_emotion_model():
-        print("✅ Model loaded successfully!")
-        print(f"✅ Model load time: {model_load_time:.2f} seconds")
-        print(f"✅ Max file size: {app.config['MAX_CONTENT_LENGTH'] // (1024*1024)}MB")
-        print(f"✅ Supported formats: {', '.join(app.config['ALLOWED_EXTENSIONS'])}")
-        print("\n📋 Available endpoints:")
-        print("- GET  /health      - Health check and status")
-        print("- GET  /model-info  - Model information")
-        print("- POST /predict     - Single audio prediction")
-        print("- POST /predict-batch - Batch audio prediction")
-        print("\n🚀 Starting server...")
-        print("Server URL: http://localhost:5000")
-        print("Logs: emotion_api.log")
-        print("=" * 60)
-        
-        # Production settings
-        app.run(
-            debug=False,  # Disable debug mode for production
-            host='0.0.0.0',
-            port=5000,
-            threaded=True,  # Enable threading for concurrent requests
-            use_reloader=False  # Disable auto-reloader for production
-        )
-    else:
-        print("❌ Failed to load model. Exiting...")
-        print("Check the model file path and dependencies.")
-        sys.exit(1)
+    # Only used for local dev (not in gunicorn path)
+    if model is None:
+        load_emotion_model()
+    app.run(debug=False, host='0.0.0.0', port=5000, threaded=True, use_reloader=False)

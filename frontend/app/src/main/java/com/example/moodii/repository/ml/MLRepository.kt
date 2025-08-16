@@ -3,8 +3,6 @@ package com.example.moodii.repository.ml
 import android.util.Log
 import com.example.moodii.api.ml.MLClient
 import com.example.moodii.api.ml.MLEmotionPredictionResponse
-import com.example.moodii.api.ml.MLHealthResponse
-import com.example.moodii.api.ml.MLModelInfoResponse
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
@@ -14,53 +12,6 @@ class MLRepository {
     private val mlService = MLClient.service
     private val tag = "MLRepository"
     
-    suspend fun checkMLHealth(): Result<MLHealthResponse> {
-        return try {
-            Log.d(tag, "Checking ML API health...")
-            val response = mlService.getHealth()
-            
-            if (response.isSuccessful) {
-                val healthData = response.body()
-                if (healthData != null) {
-                    Log.d(tag, "ML API is healthy: ${healthData.status}")
-                    Result.success(healthData)
-                } else {
-                    Log.e(tag, "Health response body is null")
-                    Result.failure(Exception("Empty health response"))
-                }
-            } else {
-                Log.e(tag, "Health check failed: ${response.code()} - ${response.message()}")
-                Result.failure(Exception("Health check failed: ${response.code()}"))
-            }
-        } catch (e: Exception) {
-            Log.e(tag, "Error checking ML health", e)
-            Result.failure(e)
-        }
-    }
-    
-    suspend fun getModelInfo(): Result<MLModelInfoResponse> {
-        return try {
-            Log.d(tag, "Getting ML model information...")
-            val response = mlService.getModelInfo()
-            
-            if (response.isSuccessful) {
-                val modelInfo = response.body()
-                if (modelInfo != null) {
-                    Log.d(tag, "Model info received: ${modelInfo.model_type}")
-                    Result.success(modelInfo)
-                } else {
-                    Log.e(tag, "Model info response body is null")
-                    Result.failure(Exception("Empty model info response"))
-                }
-            } else {
-                Log.e(tag, "Model info request failed: ${response.code()} - ${response.message()}")
-                Result.failure(Exception("Model info request failed: ${response.code()}"))
-            }
-        } catch (e: Exception) {
-            Log.e(tag, "Error getting model info", e)
-            Result.failure(e)
-        }
-    }
     
     suspend fun predictEmotion(audioFile: File): Result<MLEmotionPredictionResponse> {
         return try {
@@ -120,41 +71,5 @@ class MLRepository {
         }
     }
     
-    suspend fun testMLConnection(): Result<String> {
-        return try {
-            Log.d(tag, "Testing ML API connection...")
-            
-            // First check health
-            val healthResult = checkMLHealth()
-            if (healthResult.isFailure) {
-                return Result.failure(healthResult.exceptionOrNull() ?: Exception("Health check failed"))
-            }
-            
-            // Then get model info
-            val modelInfoResult = getModelInfo()
-            if (modelInfoResult.isFailure) {
-                return Result.failure(modelInfoResult.exceptionOrNull() ?: Exception("Model info failed"))
-            }
-            
-            val health = healthResult.getOrNull()!!
-            val modelInfo = modelInfoResult.getOrNull()!!
-            
-            val connectionSummary = """
-                ML API Connection Test Results:
-                ✅ Health Status: ${health.status}
-                ✅ Model Loaded: ${health.model_loaded}
-                ✅ Model Type: ${modelInfo.model_type}
-                ✅ Supported Emotions: ${modelInfo.emotion_labels.joinToString(", ")}
-                ✅ Max File Size: ${modelInfo.max_file_size_mb}MB
-                ✅ Supported Formats: ${modelInfo.supported_formats.joinToString(", ")}
-            """.trimIndent()
-            
-            Log.i(tag, "ML API connection test successful")
-            Result.success(connectionSummary)
-            
-        } catch (e: Exception) {
-            Log.e(tag, "ML connection test failed", e)
-            Result.failure(e)
-        }
-    }
+    // (Removed health/model info/test methods – backend proxy only exposes predict)
 }

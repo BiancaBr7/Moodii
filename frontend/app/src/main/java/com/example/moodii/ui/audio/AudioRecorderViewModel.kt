@@ -411,41 +411,7 @@ class AudioRecorderViewModel(application: Application) : AndroidViewModel(applic
         _state.value = _state.value.copy(alertMessage = Pair(message, type))
     }
 
-    fun testMLConnection() {
-        viewModelScope.launch {
-            try {
-                Log.d("AudioRecorderViewModel", "Testing ML API connection...")
-                showAlert("Testing ML API connection...", "Info")
-                
-                val result = mlRepository.testMLConnection()
-                
-                result.onSuccess { summary ->
-                    Log.d("AudioRecorderViewModel", "ML API test successful!")
-                    Log.d("AudioRecorderViewModel", summary)
-                    _state.value = _state.value.copy(
-                        mlApiHealthy = true,
-                        emotionPredictionError = null
-                    )
-                    showAlert("ML API connection successful!", "Success")
-                }.onFailure { error ->
-                    Log.e("AudioRecorderViewModel", "ML API test failed", error)
-                    _state.value = _state.value.copy(
-                        mlApiHealthy = false,
-                        emotionPredictionError = "ML API test failed: ${error.message}"
-                    )
-                    showAlert("ML API connection failed: ${error.message}", "Error")
-                }
-                
-            } catch (e: Exception) {
-                Log.e("AudioRecorderViewModel", "Error testing ML connection", e)
-                _state.value = _state.value.copy(
-                    mlApiHealthy = false,
-                    emotionPredictionError = "Connection test error: ${e.message}"
-                )
-                showAlert("Connection test error: ${e.message}", "Error")
-            }
-        }
-    }
+    // Removed testMLConnection – backend proxy doesn't expose health/model-info now
 
     fun testSaveMoodLog() {
         // Test function to save a mood log without recording

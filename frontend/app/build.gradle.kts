@@ -15,6 +15,21 @@
             versionName = "1.0"
 
             testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+            // Backend base URL (injected into BuildConfig)
+            buildConfigField("String", "API_BASE_URL", "\"http://moodii-backend-1852.eastus.azurecontainer.io:8080\"")
+        }
+
+        // Optional product flavors for future (dev/prod). Currently prod mirrors default.
+        flavorDimensions += listOf("env")
+        productFlavors {
+            create("dev") {
+                dimension = "env"
+                buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8080\"") // Emulator loopback
+            }
+            create("prod") {
+                dimension = "env"
+                buildConfigField("String", "API_BASE_URL", "\"http://moodii-backend-1852.eastus.azurecontainer.io:8080\"")
+            }
         }
 
         buildFeatures {
