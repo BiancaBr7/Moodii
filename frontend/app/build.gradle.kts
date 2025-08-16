@@ -80,7 +80,17 @@
                     getDefaultProguardFile("proguard-android-optimize.txt"),
                     "proguard-rules.pro"
                 )
-                signingConfig = signingConfigs.getByName("release")
+                // Only apply signing if all credentials are available; otherwise fall back to default debug signing
+                val hasKeystore = (project.findProperty("RELEASE_STORE_FILE") as String?)?.let { file(it).exists() } == true || System.getenv("ANDROID_KEYSTORE_PATH")?.let { file(it).exists() } == true
+                val hasCreds = (project.findProperty("RELEASE_STORE_PASSWORD") ?: System.getenv("RELEASE_STORE_PASSWORD")) != null &&
+                        (project.findProperty("RELEASE_KEY_ALIAS") ?: System.getenv("RELEASE_KEY_ALIAS")) != null &&
+                        (project.findProperty("RELEASE_KEY_PASSWORD") ?: System.getenv("RELEASE_KEY_PASSWORD")) != null
+                if (hasKeystore && hasCreds) {
+                    println("[build.gradle] Using provided release keystore for signing.")
+                    signingConfig = signingConfigs.getByName("release")
+                } else {
+                    println("[build.gradle] Release keystore credentials missing; building unsigned (will be signed with debug if installed). Provide RELEASE_* properties or env vars to enable real signing.")
+                }
             }
         }
     }
