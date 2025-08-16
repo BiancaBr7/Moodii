@@ -19,9 +19,11 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
+      - name: Prepare Maven Wrapper
+        run: |
+          chmod +x backend/moodii/mvnw
       - name: Build Spring Boot backend
-        working-directory: backend/moodii
-        run: ./mvnw -B clean package -DskipTests
+        run: ./backend/moodii/mvnw -B -f backend/moodii/pom.xml clean package -DskipTests
       - name: Upload backend JAR artifact
         uses: actions/upload-artifact@v4
         with:
