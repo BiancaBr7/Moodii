@@ -34,6 +34,7 @@
 
         buildFeatures {
             compose = true
+            buildConfig = true // Required because we define custom buildConfigField values
         }
 
         composeOptions {
