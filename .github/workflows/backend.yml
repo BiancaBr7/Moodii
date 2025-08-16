@@ -42,12 +42,12 @@ jobs:
           ${{ runner.os }}-maven
 
     # Step 3: Build the application
-    - name: Build with Maven
-      run: mvn clean package -DskipTests
+    - name: Build with Maven (backend module)
+      run: ./backend/moodii/mvnw -B -f backend/moodii/pom.xml clean package -DskipTests
 
     # Step 4: Build Docker image
     - name: Build Docker image
-      run: docker build -f backend/moodii/Dockerfile.java17 -t moodii-backend:${{ github.sha }} .
+      run: docker build -f backend/moodii/Dockerfile.java17 -t ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }} backend/moodii
 
     # Step 5: Push Docker image to Docker Hub
     - name: Log in to Docker Hub
@@ -57,14 +57,14 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Push Docker image
-      run: docker push moodii-backend:${{ github.sha }}
+      run: docker push ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
 
     # Step 6: Deploy to server (optional)
     - name: Deploy to server
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
-        docker pull moodii-backend:${{ github.sha }}
-        docker stop moodii-backend || true
-        docker rm moodii-backend || true
-        docker run -d --name moodii-backend -p 8080:8080 moodii-backend:${{ github.sha }}
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+          docker pull ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
+          docker stop moodii-backend || true
+          docker rm moodii-backend || true
+          docker run -d --name moodii-backend -p 8080:8080 ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
         EOF
