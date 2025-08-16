@@ -15,11 +15,11 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     
     private val authManager = AuthManager(application)
 
-    fun login(email: String, password: String) {
+    fun login(username: String, password: String) {
         viewModelScope.launch {
             _loginState.value = LoginState.Loading
             try {
-                val result = authManager.login(email, password)
+                val result = authManager.login(username, password)
                 if (result.isSuccess) {
                     _loginState.value = LoginState.Success(result.getOrThrow().token)
                 } else {

@@ -45,6 +45,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/moods/**").permitAll()
                 .requestMatchers("/api/mood-logs/**").permitAll()
                 .requestMatchers("/api/audio/**").permitAll()
+                .requestMatchers("/api/ml/**").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

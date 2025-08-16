@@ -4,39 +4,95 @@
     }
 
     android {
-        namespace = "com.example.moodii"
-        compileSdk = 36 // Good, using a recent SDK
+    namespace = "com.example.moodii"
+    compileSdk = 34 // Align with stable SDK supported by AGP 8.1.1
 
         defaultConfig {
             applicationId = "com.example.moodii"
             minSdk = 24
-            targetSdk = 36
+            targetSdk = 34
             versionCode = 1
             versionName = "1.0"
 
             testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+            // Backend base URL (injected into BuildConfig)
+            buildConfigField("String", "API_BASE_URL", "\"http://moodii-backend-1852.eastus.azurecontainer.io:8080\"")
+        }
+
+        // Optional product flavors for future (dev/prod). Currently prod mirrors default.
+        flavorDimensions += listOf("env")
+        productFlavors {
+            create("dev") {
+                dimension = "env"
+                buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8080\"") // Emulator loopback
+            }
+            create("prod") {
+                dimension = "env"
+                buildConfigField("String", "API_BASE_URL", "\"http://moodii-backend-1852.eastus.azurecontainer.io:8080\"")
+            }
         }
 
         buildFeatures {
             compose = true
+            buildConfig = true // Required because we define custom buildConfigField values
         }
 
         composeOptions {
-            kotlinCompilerExtensionVersion = "1.5.3" // This is compatible with Compose BOM 2024.06.00 and Kotlin 1.9.0, which you likely use
+            // Updated for Kotlin 1.9.24 (Compose compiler 1.5.14 supports this Kotlin version)
+            kotlinCompilerExtensionVersion = "1.5.14"
         }
 
         compileOptions {
-            sourceCompatibility = JavaVersion.VERSION_11
-            targetCompatibility = JavaVersion.VERSION_11
+            sourceCompatibility = JavaVersion.VERSION_17
+            targetCompatibility = JavaVersion.VERSION_17
         }
 
         kotlinOptions {
-            jvmTarget = "11"
+            jvmTarget = "17"
         }
 
         packaging {
             resources {
                 excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            }
+        }
+
+        signingConfigs {
+            create("release") {
+                // Values resolved from Gradle properties or environment variables; do NOT hardcode secrets
+                val storeFilePath = (project.findProperty("RELEASE_STORE_FILE") as String?) ?: System.getenv("ANDROID_KEYSTORE_PATH")
+                if (storeFilePath != null && file(storeFilePath).exists()) {
+                    storeFile = file(storeFilePath)
+                }
+                storePassword = (project.findProperty("RELEASE_STORE_PASSWORD") as String?) ?: System.getenv("RELEASE_STORE_PASSWORD")
+                keyAlias = (project.findProperty("RELEASE_KEY_ALIAS") as String?) ?: System.getenv("RELEASE_KEY_ALIAS")
+                keyPassword = (project.findProperty("RELEASE_KEY_PASSWORD") as String?) ?: System.getenv("RELEASE_KEY_PASSWORD")
+            }
+        }
+
+        buildTypes {
+            getByName("debug") {
+                // Optional extra logging/interceptors can be toggled here
+                isMinifyEnabled = false
+            }
+            getByName("release") {
+                isMinifyEnabled = true
+                isShrinkResources = true
+                proguardFiles(
+                    getDefaultProguardFile("proguard-android-optimize.txt"),
+                    "proguard-rules.pro"
+                )
+                // Only apply signing if all credentials are available; otherwise fall back to default debug signing
+                val hasKeystore = (project.findProperty("RELEASE_STORE_FILE") as String?)?.let { file(it).exists() } == true || System.getenv("ANDROID_KEYSTORE_PATH")?.let { file(it).exists() } == true
+                val hasCreds = (project.findProperty("RELEASE_STORE_PASSWORD") ?: System.getenv("RELEASE_STORE_PASSWORD")) != null &&
+                        (project.findProperty("RELEASE_KEY_ALIAS") ?: System.getenv("RELEASE_KEY_ALIAS")) != null &&
+                        (project.findProperty("RELEASE_KEY_PASSWORD") ?: System.getenv("RELEASE_KEY_PASSWORD")) != null
+                if (hasKeystore && hasCreds) {
+                    println("[build.gradle] Using provided release keystore for signing.")
+                    signingConfig = signingConfigs.getByName("release")
+                } else {
+                    println("[build.gradle] Release keystore credentials missing; building unsigned (will be signed with debug if installed). Provide RELEASE_* properties or env vars to enable real signing.")
+                }
             }
         }
     }
@@ -59,14 +115,14 @@
         implementation(libs.kotlinx.coroutines.android) // Kotlin Coroutines for async operations
         implementation("androidx.appcompat:appcompat:1.6.1")
 
-        // Jetpack Compose Material 3 (Using BOM to manage version)
-        implementation ("androidx.compose.material3:material3:1.4.0-alpha17") // <--- CORRECTED LINE
-        implementation ("androidx.compose.material:material-icons-extended:1.7.8") // No version needed with BOM
-        implementation ("androidx.compose:compose-bom:2024.04.00") // This manages the versions
-        implementation ("androidx.compose.ui:ui") // No version needed with BOM
-        implementation ("androidx.compose.ui:ui-graphics") // No version needed with BOM
-        implementation ("androidx.compose.animation:animation") // No version needed with BOM
-        implementation ("androidx.compose.ui:ui-text") // No version needed with BOM
+    // Updated Compose BOM (keep library declarations without explicit versions to leverage BOM alignment)
+    implementation(platform("androidx.compose:compose-bom:2024.06.00"))
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.animation:animation")
+    implementation("androidx.compose.ui:ui-text")
 
         // Debugging tools for Compose
         debugImplementation(libs.androidx.ui.tooling)

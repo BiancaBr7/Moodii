@@ -108,7 +108,7 @@ fun LoginScreen(navController: NavHostController, viewModel: LoginViewModel = vi
                 onValueChange = { username = it },
                 label = {
                     Text(
-                        "Username or Email",
+                        "Username",
                         fontFamily = MaterialTheme.typography.bodyMedium.fontFamily, // Apply your pixelated font to label
                         color = if (username.isEmpty()) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         else MaterialTheme.colorScheme.onSurface // Adjust label color

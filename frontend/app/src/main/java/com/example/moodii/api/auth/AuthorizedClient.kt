@@ -3,8 +3,11 @@ package com.example.moodii.api.auth
 import android.content.Context
 import android.content.SharedPreferences
 import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import java.util.concurrent.TimeUnit
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import com.example.moodii.BuildConfig
 
 object AuthorizedClient {
     private var context: Context? = null
@@ -22,7 +25,11 @@ object AuthorizedClient {
     }
     
     val okHttpClient: OkHttpClient by lazy {
+        val logging = HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC }
         OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
             .addInterceptor { chain ->
                 val token = getStoredToken()
                 val request = if (token != null) {
@@ -33,20 +40,29 @@ object AuthorizedClient {
                     chain.request()
                 }
                 chain.proceed(request)
-            }.build()
+            }
+            .addInterceptor(logging)
+            .build()
     }
     
-    fun create(token: String): Retrofit {
+    fun create(token: String, baseUrl: String? = null): Retrofit {
+        val logging = HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC }
         val client = OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
                     .addHeader("Authorization", "Bearer $token")
                     .build()
                 chain.proceed(request)
-            }.build()
+            }
+            .addInterceptor(logging)
+            .build()
 
+        val resolved = (baseUrl ?: BuildConfig.API_BASE_URL).trimEnd('/') + "/api/"
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8080/api/")
+            .baseUrl(resolved)
             .addConverterFactory(GsonConverterFactory.create())
             .client(client)
             .build()

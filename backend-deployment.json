@@ -1,0 +1,11 @@
+﻿{
+    "timestamp":  "2025-08-15T19:56:56.4790579-04:00",
+    "fqdn":  "moodii-backend-4166.eastus.azurecontainer.io",
+    "ip":  "20.253.58.238",
+    "baseHost":  "moodii-backend-4166.eastus.azurecontainer.io",
+    "health":  "http:///actuator/health",
+    "image":  "moodiiacr1189.azurecr.io/moodii-backend:latest",
+    "acr":  "moodiiacr1189.azurecr.io",
+    "mongoHost":  "moodii-cluster.qbiqko9.mongodb.net",
+    "db":  "moodii"
+}
