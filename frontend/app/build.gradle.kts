@@ -115,7 +115,8 @@
         implementation("androidx.appcompat:appcompat:1.6.1")
 
     // Compose BOM pins versions; list BOM first then modules without versions
-    implementation(platform("androidx.compose:compose-bom:2024.04.00"))
+    // BOM aligned with Compose runtime 1.5.x (works with compilerExtension 1.5.3 & Kotlin 1.9.10)
+    implementation(platform("androidx.compose:compose-bom:2023.09.01"))
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.ui:ui")
