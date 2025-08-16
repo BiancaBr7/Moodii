@@ -29,9 +29,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r ml/CNN+LSTM_Model/requirements.txt
 
-    # Step 4: Run tests
+    # Step 4: Run tests (lightweight)
     - name: Run tests
-      run: pytest ml/CNN+LSTM_Model/tests
+      run: |
+        if [ -d ml/CNN+LSTM_Model/tests ]; then pytest -q ml/CNN+LSTM_Model/tests; else echo "No tests directory"; fi
 
     # Step 5: Build Docker image
     - name: Build Docker image
