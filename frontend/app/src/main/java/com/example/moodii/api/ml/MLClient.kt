@@ -11,11 +11,8 @@ object MLClient {
     // Base now points to backend proxy (/api/ml/) so mobile only needs backend URL (BuildConfig.API_BASE_URL)
     // Fallback to emulator base if BuildConfig not accessible yet.
     private var ML_BASE_URL: String = try {
-        buildString {
-            append(BuildConfig.API_BASE_URL.trimEnd('/'))
-            append("/api/ml/")
-        }
-    } catch (e: Exception) { "http://10.0.2.2:8080/api/ml/" }
+        BuildConfig.API_BASE_URL.trimEnd('/') + "/api/ml/"
+    } catch (e: Exception) { "http://localhost/api/ml/" }
     private const val TAG = "MLClient"
     
     // Create logging interceptor for debugging

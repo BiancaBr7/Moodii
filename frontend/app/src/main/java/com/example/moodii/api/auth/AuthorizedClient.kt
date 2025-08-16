@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import com.example.moodii.BuildConfig
 
 object AuthorizedClient {
     private var context: Context? = null
@@ -36,7 +37,7 @@ object AuthorizedClient {
             }.build()
     }
     
-    fun create(token: String): Retrofit {
+    fun create(token: String, baseUrl: String? = null): Retrofit {
         val client = OkHttpClient.Builder()
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
@@ -45,8 +46,9 @@ object AuthorizedClient {
                 chain.proceed(request)
             }.build()
 
+        val resolved = (baseUrl ?: BuildConfig.API_BASE_URL).trimEnd('/') + "/api/"
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8080/api/")
+            .baseUrl(resolved)
             .addConverterFactory(GsonConverterFactory.create())
             .client(client)
             .build()

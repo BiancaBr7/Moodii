@@ -1,166 +1,149 @@
-name: CI/CD Pipeline
+name: Moodii CI-CD
 
 on:
   push:
-    branches: [ main, develop, containerize ]
+    branches: [ main, containerize ]
   pull_request:
-    branches: [ main, develop ]
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME_BACKEND: ${{ github.repository }}/backend
-  IMAGE_NAME_ML: ${{ github.repository }}/ml-api
-  IMAGE_NAME_FRONTEND: ${{ github.repository }}/frontend
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build-backend:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Build Spring Boot backend
+        working-directory: backend/moodii
+        run: ./mvnw -B clean package -DskipTests
+      - name: Upload backend JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: backend/moodii/target/*.jar
 
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-
-    - name: Build and push Backend Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./backend/moodii
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-
-  build-ml-api:
+  backend-docker:
+    needs: build-backend
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_ML }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-
-    - name: Build and push ML API Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./ml/CNN+LSTM_Model
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-
-  build-frontend:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-
-    - name: Build and push Frontend Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./frontend
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-
-  security-scan:
-    runs-on: ubuntu-latest
-    needs: [build-backend, build-ml-api, build-frontend]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
-    strategy:
-      matrix:
-        image: [backend, ml-api, frontend]
-    
-    steps:
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.image }}:latest
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-
-    - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v3
-      with:
-        sarif_file: 'trivy-results.sarif'
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: [build-backend, build-ml-api, build-frontend]
     if: github.ref == 'refs/heads/main'
-    
+    env:
+      ACR_NAME: ${{ secrets.AZURE_ACR_NAME }}
+      IMAGE_TAG: ${{ github.sha }}
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      
-    - name: Deploy to staging
-      run: |
-        echo "Deploying to staging environment..."
-        # Add your deployment commands here
-        # For example: kubectl apply -f k8s/ or docker-compose up -d
-        
-    # Uncomment and configure for production deployment
-    # - name: Deploy to production
-    #   if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
-    #   run: |
-    #     echo "Deploying to production environment..."
-    #     # Add your production deployment commands here
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Build & Push backend image
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az acr login --name $ACR_NAME
+            docker build -t $ACR_NAME.azurecr.io/moodii-backend:$IMAGE_TAG -f backend/moodii/Dockerfile backend/moodii
+            docker push $ACR_NAME.azurecr.io/moodii-backend:$IMAGE_TAG
+      - name: Output image tag
+        run: echo "backend_image=$ACR_NAME.azurecr.io/moodii-backend:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+  ml-docker:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    env:
+      ACR_NAME: ${{ secrets.AZURE_ACR_NAME }}
+      IMAGE_TAG: ${{ github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Build & Push ML image (CNN+LSTM)
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az acr login --name $ACR_NAME
+            docker build -t $ACR_NAME.azurecr.io/moodii-ml-cnnlstm:$IMAGE_TAG -f ml/CNN+LSTM_Model/Dockerfile ml/CNN+LSTM_Model
+            docker push $ACR_NAME.azurecr.io/moodii-ml-cnnlstm:$IMAGE_TAG
+
+  android-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up JDK 17 (Android Gradle requirement)
+        uses: actions/setup-java@v4
+        with:
+            distribution: temurin
+            java-version: '17'
+            cache: gradle
+      - name: Grant execute permission
+        run: chmod +x ./frontend/gradlew
+      - name: Build Release APK (Unsigned)
+        working-directory: frontend
+        run: ./gradlew :app:assembleProdRelease --stacktrace
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: moodii-prod-release-apk
+          path: frontend/app/build/outputs/apk/prod/release/*.apk
+
+  deploy-aci:
+    needs: [backend-docker, ml-docker]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    env:
+      ACR_NAME: ${{ secrets.AZURE_ACR_NAME }}
+      RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+      LOCATION: ${{ secrets.AZURE_LOCATION }}
+      MONGO_URI: ${{ secrets.MONGO_URI }}
+      ML_IMAGE_TAG: ${{ github.sha }}
+      BACKEND_IMAGE_TAG: ${{ github.sha }}
+    steps:
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Deploy backend container instance
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az acr login --name $ACR_NAME
+            az container create \
+              --resource-group $RESOURCE_GROUP \
+              --name moodii-backend \
+              --image $ACR_NAME.azurecr.io/moodii-backend:$BACKEND_IMAGE_TAG \
+              --ports 8080 \
+              --cpu 1 --memory 2 \
+              --restart-policy Always \
+              --environment-variables SPRING_DATA_MONGODB_URI=$MONGO_URI ML_API_URL="http://moodii-ml-cnnlstm.eastus.azurecontainer.io:5000" \
+              --registry-login-server $ACR_NAME.azurecr.io \
+              --registry-username ${{ secrets.AZURE_ACR_USERNAME }} \
+              --registry-password ${{ secrets.AZURE_ACR_PASSWORD }} || az container restart --name moodii-backend --resource-group $RESOURCE_GROUP
+      - name: Deploy ML container instance (CNN+LSTM)
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az container create \
+              --resource-group $RESOURCE_GROUP \
+              --name moodii-ml-cnnlstm \
+              --image $ACR_NAME.azurecr.io/moodii-ml-cnnlstm:$ML_IMAGE_TAG \
+              --ports 5000 \
+              --cpu 2 --memory 4 \
+              --restart-policy Always \
+              --registry-login-server $ACR_NAME.azurecr.io \
+              --registry-username ${{ secrets.AZURE_ACR_USERNAME }} \
+              --registry-password ${{ secrets.AZURE_ACR_PASSWORD }} || az container restart --name moodii-ml-cnnlstm --resource-group $RESOURCE_GROUP
+      - name: Show container statuses
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az container show --resource-group $RESOURCE_GROUP --name moodii-backend --query "instanceView.state"
+            az container show --resource-group $RESOURCE_GROUP --name moodii-ml-cnnlstm --query "instanceView.state"
