@@ -43,7 +43,9 @@ jobs:
 
     # Step 3: Build the application
     - name: Build with Maven (backend module)
-      run: ./backend/moodii/mvnw -B -f backend/moodii/pom.xml clean package -DskipTests
+      run: |
+        chmod +x backend/moodii/mvnw
+        ./backend/moodii/mvnw -B -f backend/moodii/pom.xml clean package -DskipTests
 
     # Step 4: Build Docker image
     - name: Build Docker image
