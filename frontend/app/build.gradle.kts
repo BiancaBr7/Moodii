@@ -38,7 +38,8 @@
         }
 
         composeOptions {
-            kotlinCompilerExtensionVersion = "1.5.3" // This is compatible with Compose BOM 2024.06.00 and Kotlin 1.9.0, which you likely use
+            // Updated for Kotlin 1.9.24 (Compose compiler 1.5.14 supports this Kotlin version)
+            kotlinCompilerExtensionVersion = "1.5.14"
         }
 
         compileOptions {
@@ -114,9 +115,8 @@
         implementation(libs.kotlinx.coroutines.android) // Kotlin Coroutines for async operations
         implementation("androidx.appcompat:appcompat:1.6.1")
 
-    // Compose BOM pins versions; list BOM first then modules without versions
-    // BOM aligned with Compose runtime 1.5.x (works with compilerExtension 1.5.3 & Kotlin 1.9.10)
-    implementation(platform("androidx.compose:compose-bom:2023.09.01"))
+    // Updated Compose BOM (keep library declarations without explicit versions to leverage BOM alignment)
+    implementation(platform("androidx.compose:compose-bom:2024.06.00"))
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.ui:ui")

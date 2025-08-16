@@ -40,7 +40,7 @@ import com.example.moodii.ui.theme.PixelatedAppTheme // Ensure your custom theme
 @Composable
 fun SignUpScreen(navController: NavHostController, viewModel: RegisterViewModel = viewModel()) {
     var username by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
+    // Removed email (backend registers with username only)
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     
@@ -157,51 +157,7 @@ fun SignUpScreen(navController: NavHostController, viewModel: RegisterViewModel 
                 )
             )
 
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = {
-                    Text(
-                        "Email",
-                        fontFamily = MaterialTheme.typography.bodyMedium.fontFamily,
-                        color = if (email.isEmpty()) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        else MaterialTheme.colorScheme.onSurface
-                    )
-                },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp),
-                colors = OutlinedTextFieldDefaults.colors( // Correct function
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    disabledContainerColor = MaterialTheme.colorScheme.surface,
-
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.secondary,
-                    errorBorderColor = MaterialTheme.colorScheme.error,
-                    disabledBorderColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
-
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    errorTextColor = MaterialTheme.colorScheme.error,
-                    disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-
-                    focusedLabelColor = MaterialTheme.colorScheme.primary,
-                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    errorLabelColor = MaterialTheme.colorScheme.error,
-
-                    focusedPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-
-                    cursorColor = MaterialTheme.colorScheme.primary,
-                    errorCursorColor = MaterialTheme.colorScheme.error,
-                ),
-                textStyle = MaterialTheme.typography.bodyMedium.copy(
-                    fontFamily = MaterialTheme.typography.bodyMedium.fontFamily,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            )
+            // Email input removed
 
             OutlinedTextField(
                 value = password,
@@ -300,16 +256,14 @@ fun SignUpScreen(navController: NavHostController, viewModel: RegisterViewModel 
             Button(
                 onClick = {
                     validationMessage = when {
-                        username.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank() ->
+                        username.isBlank() || password.isBlank() || confirmPassword.isBlank() ->
                             "Please fill in all fields."
                         password != confirmPassword ->
                             "Passwords do not match."
-                        email.contains("@").not() || email.contains(".").not() ->
-                            "Please enter a valid email address."
                         password.length < 6 ->
                             "Password must be at least 6 characters long."
                         else -> {
-                            viewModel.register(username, email, password)
+                            viewModel.register(username, password)
                             null // Clear validation message when submitting
                         }
                     }

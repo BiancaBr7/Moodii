@@ -13,11 +13,11 @@ class RegisterViewModel(private val repository: AuthRepository = AuthRepository(
     private val _registerState = MutableStateFlow<RegisterState>(RegisterState.Idle)
     val registerState: StateFlow<RegisterState> = _registerState
 
-    fun register(username: String, email: String, password: String) {
+    fun register(username: String, password: String) {
         viewModelScope.launch {
             _registerState.value = RegisterState.Loading
             try {
-                val response = repository.register(email, password)
+                val response = repository.register(username, password)
                 if (response.isSuccessful) {
                     val message = response.body()?.get("message") ?: "Registered successfully"
                     _registerState.value = RegisterState.Success(message)

@@ -19,10 +19,10 @@ class AuthManager(context: Context) {
         private const val KEY_IS_LOGGED_IN = "is_logged_in"
     }
     
-    suspend fun login(email: String, password: String): Result<AuthResponse> {
+    suspend fun login(username: String, password: String): Result<AuthResponse> {
         return withContext(Dispatchers.IO) {
             try {
-                val request = AuthRequest(email, password)
+                val request = AuthRequest(username, password)
                 val response = AuthClient.authService.login(request)
                 
                 if (response.isSuccessful && response.body() != null) {

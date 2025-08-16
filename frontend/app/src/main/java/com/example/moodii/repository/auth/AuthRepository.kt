@@ -6,13 +6,13 @@ import com.example.moodii.data.auth.AuthResponse
 import retrofit2.Response
 
 class AuthRepository {
-    suspend fun login(email: String, password: String): Response<AuthResponse> {
-        val request = AuthRequest(email, password)
+    suspend fun login(username: String, password: String): Response<AuthResponse> {
+        val request = AuthRequest(username, password)
         return AuthClient.authService.login(request)
     }
 
-    suspend fun register(email: String, password: String): Response<Map<String, String>> {
-        val request = AuthRequest(email, password)
+    suspend fun register(username: String, password: String): Response<Map<String, String>> {
+        val request = AuthRequest(username, password)
         return AuthClient.authService.register(request)
     }
 }
