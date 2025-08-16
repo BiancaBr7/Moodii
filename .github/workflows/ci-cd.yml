@@ -30,50 +30,50 @@ jobs:
           name: backend-jar
           path: backend/moodii/target/*.jar
 
-  backend-docker:
-    needs: build-backend
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    env:
-      ACR_NAME: ${{ secrets.AZURE_ACR_NAME }}
-      IMAGE_TAG: ${{ github.sha }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Azure login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - name: Build & Push backend image
-        uses: azure/cli@v2
-        with:
-          inlineScript: |
-            az acr login --name $ACR_NAME
-            docker build -t $ACR_NAME.azurecr.io/moodii-backend:$IMAGE_TAG -f backend/moodii/Dockerfile backend/moodii
-            docker push $ACR_NAME.azurecr.io/moodii-backend:$IMAGE_TAG
-      - name: Output image tag
-        run: echo "backend_image=$ACR_NAME.azurecr.io/moodii-backend:$IMAGE_TAG" >> $GITHUB_OUTPUT
+  # backend-docker:
+  #   needs: build-backend
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main'
+  #   env:
+  #     ACR_NAME: ${{ secrets.AZURE_ACR_NAME }}
+  #     IMAGE_TAG: ${{ github.sha }}
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #     - name: Azure login
+  #       uses: azure/login@v2
+  #       with:
+  #         creds: ${{ secrets.AZURE_CREDENTIALS }}
+  #     - name: Build & Push backend image
+  #       uses: azure/cli@v2
+  #       with:
+  #         inlineScript: |
+  #           az acr login --name $ACR_NAME
+  #           docker build -t $ACR_NAME.azurecr.io/moodii-backend:$IMAGE_TAG -f backend/moodii/Dockerfile backend/moodii
+  #           docker push $ACR_NAME.azurecr.io/moodii-backend:$IMAGE_TAG
+  #     - name: Output image tag
+  #       run: echo "backend_image=$ACR_NAME.azurecr.io/moodii-backend:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-  ml-docker:
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    env:
-      ACR_NAME: ${{ secrets.AZURE_ACR_NAME }}
-      IMAGE_TAG: ${{ github.sha }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Azure login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - name: Build & Push ML image (CNN+LSTM)
-        uses: azure/cli@v2
-        with:
-          inlineScript: |
-            az acr login --name $ACR_NAME
-            docker build -t $ACR_NAME.azurecr.io/moodii-ml-cnnlstm:$IMAGE_TAG -f ml/CNN+LSTM_Model/Dockerfile ml/CNN+LSTM_Model
-            docker push $ACR_NAME.azurecr.io/moodii-ml-cnnlstm:$IMAGE_TAG
+  # ml-docker:
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main'
+  #   env:
+  #     ACR_NAME: ${{ secrets.AZURE_ACR_NAME }}
+  #     IMAGE_TAG: ${{ github.sha }}
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #     - name: Azure login
+  #       uses: azure/login@v2
+  #       with:
+  #         creds: ${{ secrets.AZURE_CREDENTIALS }}
+  #     - name: Build & Push ML image (CNN+LSTM)
+  #       uses: azure/cli@v2
+  #       with:
+  #         inlineScript: |
+  #           az acr login --name $ACR_NAME
+  #           docker build -t $ACR_NAME.azurecr.io/moodii-ml-cnnlstm:$IMAGE_TAG -f ml/CNN+LSTM_Model/Dockerfile ml/CNN+LSTM_Model
+  #           docker push $ACR_NAME.azurecr.io/moodii-ml-cnnlstm:$IMAGE_TAG
 
   android-build:
     runs-on: ubuntu-latest
