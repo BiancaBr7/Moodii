@@ -66,6 +66,7 @@ jobs:
         run: docker push ${{ env.REGISTRY }}/${{ steps.names.outputs.backend_image }}:${{ github.sha }}
 
       - name: Deploy to server (optional)
+        if: ${{ secrets.SSH_USER != '' && secrets.SSH_HOST != '' && github.ref == 'refs/heads/main' }}
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
             docker pull ${{ env.REGISTRY }}/${{ steps.names.outputs.backend_image }}:${{ github.sha }}
@@ -73,3 +74,7 @@ jobs:
             docker rm moodii-backend || true
             docker run -d --name moodii-backend -p 8080:8080 ${{ env.REGISTRY }}/${{ steps.names.outputs.backend_image }}:${{ github.sha }}
           EOF
+      - name: Skip deploy (no SSH secrets)
+        if: ${{ !(secrets.SSH_USER != '' && secrets.SSH_HOST != '' && github.ref == 'refs/heads/main') }}
+        run: |
+          echo 'Skipping SSH deploy: missing secrets or not on main branch.'
