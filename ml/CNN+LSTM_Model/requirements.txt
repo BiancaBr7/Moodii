@@ -9,3 +9,6 @@ soundfile==0.12.1
 gunicorn==21.2.0
 werkzeug==2.3.7
 requests==2.31.0
+
+# Test dependencies
+pytest==8.2.2
