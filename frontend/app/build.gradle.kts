@@ -4,13 +4,13 @@
     }
 
     android {
-        namespace = "com.example.moodii"
-        compileSdk = 36 // Good, using a recent SDK
+    namespace = "com.example.moodii"
+    compileSdk = 34 // Align with stable SDK supported by AGP 8.1.1
 
         defaultConfig {
             applicationId = "com.example.moodii"
             minSdk = 24
-            targetSdk = 36
+            targetSdk = 34
             versionCode = 1
             versionName = "1.0"
 
@@ -41,12 +41,12 @@
         }
 
         compileOptions {
-            sourceCompatibility = JavaVersion.VERSION_11
-            targetCompatibility = JavaVersion.VERSION_11
+            sourceCompatibility = JavaVersion.VERSION_17
+            targetCompatibility = JavaVersion.VERSION_17
         }
 
         kotlinOptions {
-            jvmTarget = "11"
+            jvmTarget = "17"
         }
 
         packaging {
@@ -113,14 +113,14 @@
         implementation(libs.kotlinx.coroutines.android) // Kotlin Coroutines for async operations
         implementation("androidx.appcompat:appcompat:1.6.1")
 
-        // Jetpack Compose Material 3 (Using BOM to manage version)
-        implementation ("androidx.compose.material3:material3:1.4.0-alpha17") // <--- CORRECTED LINE
-        implementation ("androidx.compose.material:material-icons-extended:1.7.8") // No version needed with BOM
-        implementation ("androidx.compose:compose-bom:2024.04.00") // This manages the versions
-        implementation ("androidx.compose.ui:ui") // No version needed with BOM
-        implementation ("androidx.compose.ui:ui-graphics") // No version needed with BOM
-        implementation ("androidx.compose.animation:animation") // No version needed with BOM
-        implementation ("androidx.compose.ui:ui-text") // No version needed with BOM
+    // Compose BOM pins versions; list BOM first then modules without versions
+    implementation(platform("androidx.compose:compose-bom:2024.04.00"))
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.animation:animation")
+    implementation("androidx.compose.ui:ui-text")
 
         // Debugging tools for Compose
         debugImplementation(libs.androidx.ui.tooling)

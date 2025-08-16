@@ -33,5 +33,6 @@ androidx-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", v
 androidx-material3-android = { group = "androidx.compose.material3", name = "material3-android", version.ref = "material3Android" }
 
 [plugins]
-android-application = { id = "com.android.application", version = "8.11.1" }
+# Corrected Android Gradle Plugin version (typo was 8.11.1). Use stable 8.1.1; bump later if needed.
+android-application = { id = "com.android.application", version = "8.1.1" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version = "1.9.10" }
