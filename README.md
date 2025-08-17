@@ -9,7 +9,7 @@
 Moodii is a voice‑driven mood tracking platform. Instead of tapping icons, users record brief audio reflections. A speech emotion recognition (SER) model (CNN + LSTM) extracts affective signals (tone, pace, timbre) and helps produce a structured mood log.
 
 ## Demo (Video)
-<div><iframe width="560" height="315" src="https://www.youtube.com/embed/ERzkv3qhfCc?si=xOn8PUu943wJZeJe" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>div>
+[![Watch the video](https://img.youtube.com/vi/ERzkv3qhfCc/maxresdefault.jpg)](https://www.youtube.com/watch?v=ERzkv3qhfCc)
 
 ## Features
 - Voice mood entries
