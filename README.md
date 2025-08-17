@@ -1,9 +1,6 @@
 <div align="center">
 
 # Moodii
-
-[![Demo Video](https://img.youtube.com/vi/ERzkv3qhfCc/hqdefault.jpg)](https://www.youtube.com/watch?v=ERzkv3qhfCc)
-
 <em>A Voice-Based Mood Tracker that listens.</em>
 
 </div>
@@ -12,7 +9,7 @@
 Moodii is a voice‑driven mood tracking platform. Instead of tapping icons, users record brief audio reflections. A speech emotion recognition (SER) model (CNN + LSTM) extracts affective signals (tone, pace, timbre) and helps produce a structured mood log.
 
 ## Demo (Video)
-Watch: https://www.youtube.com/watch?v=ERzkv3qhfCc
+<iframe width="560" height="315" src="https://www.youtube.com/embed/ERzkv3qhfCc?si=xOn8PUu943wJZeJe" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 ## Features
 - Voice mood entries
@@ -25,16 +22,16 @@ Watch: https://www.youtube.com/watch?v=ERzkv3qhfCc
 
 ## Architecture
 ```
-┌────────────┐        REST / JWT         ┌───────────────┐
+┌────────────┐        REST / JWT        ┌───────────────┐
 │  Android   │ ───────────────────────► │  Spring Boot  │
 │  App       │                          │  Backend API  │
-└─────┬──────┘                          └──────┬────────┘
-	│  Upload (future)                       │ HTTP to ML
-	│                                        ▼
-	▼                               ┌──────────────────┐
-┌─────────────┐                      │  ML Service       │
-│  MongoDB     │◄── Mood logs / auth │  Flask + TF Model │
-└─────────────┘                      └──────────────────┘
+└────────────┘          Upload          └──────┬────────┘
+     ┌—————————————————————————————————————————│ HTTP to ML
+	 |                                         ▼
+	 ▼                                ┌──────────────────┐
+┌─────────────┐                       │   ML Service     │
+│   MongoDB   │ ◄── Mood logs / auth  │ Flask + TF Model │
+└─────────────┘                       └──────────────────┘
 ```
 
 ## Tech Stack
